@@ -6,11 +6,18 @@ dotenv.config();
 
 const app = express();
 
+const authRoutes = require('./routes/authRoutes');
+const listingRoutes = require('./routes/listingRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+
 // Middlewares พื้นฐาน
 app.use(cors());
-app.use(express.json()); // สำหรับอ่าน Body ที่เป็น JSON
+app.use(express.json());
 
-// Health Check Route สำหรับทดสอบว่า Server รันติดไหม
+app.use('/auth', authRoutes);
+app.use('/listings', listingRoutes);
+app.use('/categories', categoryRoutes);
+
 app.get('/', (req, res) => {
     res.status(200).json({ message: 'CEDT Marketplace API is running!' });
 });
