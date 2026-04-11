@@ -9,14 +9,15 @@ const app = express();
 const authRoutes = require('./routes/authRoutes');
 const listingRoutes = require('./routes/listingRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const locationRoutes = require('./routes/locationRoutes');
 
-// Middlewares พื้นฐาน
 app.use(cors());
 app.use(express.json());
 
 app.use('/auth', authRoutes);
 app.use('/listings', listingRoutes);
 app.use('/categories', categoryRoutes);
+app.use('/pickup-locations', locationRoutes)
 
 app.get('/', (req, res) => {
     res.status(200).json({ message: 'CEDT Marketplace API is running!' });

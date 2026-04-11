@@ -1,6 +1,5 @@
 const prisma = require('../config/prisma');
 
-// ดึงรายการสินค้าทั้งหมด พร้อมระบบ Filter
 exports.getListings = async (req, res) => {
     try {
         const { categoryId, courseCode, status } = req.query; // รับค่าจาก Query Params
@@ -30,7 +29,6 @@ exports.getListings = async (req, res) => {
     }
 };
 
-// เพิ่มฟีเจอร์ลงขายสินค้า (ต้องใช้ Auth)
 exports.createListing = async (req, res) => {
     try {
         const { title, description, price, isFree, categoryId, courseCode, pickupLocationId, images } = req.body;
@@ -54,5 +52,29 @@ exports.createListing = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to create listing' });
+    }
+};
+
+exports.getListingById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const listing = await prisma.listing.findUnique({
+            where: { id },
+            include: {
+                category: true,
+                seller: {
+                    select: { displayName: true, avatarUrl: true, studentId: true }
+                },
+                pickupLocation: true
+            }
+        });
+
+        if (!listing) {
+            return res.status(404).json({ error: 'Listing not found' });
+        }
+
+        res.status(200).json(listing);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
     }
 };

@@ -5,7 +5,6 @@ const PORT = process.env.PORT || 3000;
 
 async function startServer() {
     try {
-        // ทดสอบการเชื่อมต่อฐานข้อมูลก่อนเริ่มรัน Server
         await prisma.$connect();
         console.log('Connected to PostgreSQL database');
 

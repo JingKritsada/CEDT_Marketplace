@@ -5,14 +5,12 @@ exports.login = async (req, res) => {
     try {
         const { studentId, email, displayName } = req.body;
 
-        // 1. ค้นหาหรือสร้าง User ใหม่ (ถ้ายังไม่มีในระบบ)
         let user = await prisma.user.upsert({
             where: { email },
             update: { displayName },
             create: { studentId, email, displayName },
         });
 
-        // 2. สร้าง Access Token (อายุ 15 นาที) และ Refresh Token (อายุ 7 วัน)
         const accessToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '15m' });
         const refreshToken = jwt.sign({ userId: user.id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
