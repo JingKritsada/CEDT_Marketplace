@@ -131,3 +131,41 @@ exports.deleteListing = async (req, res) => {
         res.status(500).json({ error: 'Failed to delete listing' });
     }
 };
+
+exports.searchListings = async (req, res) => {
+    try {
+        const { q, categoryId, courseCode, minPrice, maxPrice } = req.query;
+
+        const listings = await prisma.listing.findMany({
+            where: {
+                AND: [
+                    q ? {
+                        OR: [
+                            { title: { contains: q, mode: 'insensitive' } },
+                            { description: { contains: q, mode: 'insensitive' } }
+                        ]
+                    } : {},
+                    categoryId ? { categoryId } : {},
+                    courseCode ? { courseCode: { contains: courseCode } } : {},
+                    minPrice || maxPrice ? {
+                        price: {
+                            gte: minPrice ? parseFloat(minPrice) : undefined,
+                            lte: maxPrice ? parseFloat(maxPrice) : undefined
+                        }
+                    } : {}
+                ]
+            },
+            include: {
+                category: true,
+                seller: { select: { displayName: true, avatarUrl: true } },
+                pickupLocation: true
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.status(200).json(listings);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Search failed' });
+    }
+};
