@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-    
+
     const categories = [
         { name: 'Microcontrollers', slug: 'microcontrollers' },
         { name: 'Sensors', slug: 'sensors' },
@@ -18,7 +18,7 @@ async function main() {
         });
     }
 
-    
+
     const locations = [
         { name: 'Larn Gear', building: 'Engineering Building 3', description: 'Under the red roof' },
         { name: 'Library', building: 'Engineering Building 100 Years', description: '1st floor entrance' }

@@ -21,6 +21,7 @@ app.use('/categories', categoryRoutes);
 app.use('/pickup-locations', locationRoutes);
 app.use('/users', userRoutes);
 
+
 app.get('/', (req, res) => {
     res.status(200).json({ message: 'CEDT Marketplace API is running!' });
 });

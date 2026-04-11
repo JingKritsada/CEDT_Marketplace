@@ -18,6 +18,7 @@ model User {
   studentId        String    @unique
   email            String    @unique
   displayName      String
+  password         String   
   avatarUrl        String?
   listings         Listing[] @relation("UserListings")
   boughtChatRooms  ChatRoom[] @relation("BuyerRooms")
