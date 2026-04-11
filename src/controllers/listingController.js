@@ -78,3 +78,56 @@ exports.getListingById = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+exports.updateListing = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, price, status, categoryId, pickupLocationId } = req.body;
+        const userId = req.user.userId;
+
+        const listing = await prisma.listing.findUnique({ where: { id } });
+
+        if (!listing) return res.status(404).json({ error: 'Listing not found' });
+
+        if (listing.sellerId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized: You do not own this listing' });
+        }
+
+        const updated = await prisma.listing.update({
+            where: { id },
+            data: {
+                title,
+                description,
+                price: price ? parseFloat(price) : undefined,
+                status, // เช่น เปลี่ยนเป็น 'SOLD' หรือ 'RESERVED'
+                categoryId,
+                pickupLocationId
+            }
+        });
+
+        res.status(200).json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update listing' });
+    }
+};
+
+exports.deleteListing = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+
+        const listing = await prisma.listing.findUnique({ where: { id } });
+
+        if (!listing) return res.status(404).json({ error: 'Listing not found' });
+
+        // Ownership Check
+        if (listing.sellerId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        await prisma.listing.delete({ where: { id } });
+        res.status(200).json({ message: 'Listing deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete listing' });
+    }
+};

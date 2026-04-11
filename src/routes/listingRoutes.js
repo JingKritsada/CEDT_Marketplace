@@ -7,4 +7,7 @@ router.get('/', listingController.getListings);
 router.post('/', authMiddleware, listingController.createListing);
 router.get('/:id', listingController.getListingById);
 
+router.patch('/:id', authMiddleware, listingController.updateListing);
+router.delete('/:id', authMiddleware, listingController.deleteListing);
+
 module.exports = router;
