@@ -16,18 +16,26 @@ import {
 	listingQuerySchema,
 	updateListingSchema,
 } from "../models/listing-model";
+import { writeRateLimit } from "../middlewares/rate-limit";
 
 export const listingRouter = Router();
 
 listingRouter.get("/", validate(listingQuerySchema, "query"), getListings);
 listingRouter.get("/search", validate(listingQuerySchema, "query"), searchListings);
 listingRouter.get("/:id", validate(listingIdSchema, "params"), getListingById);
-listingRouter.post("/", requireAuth, validate(createListingSchema), createListing);
+listingRouter.post("/", writeRateLimit, requireAuth, validate(createListingSchema), createListing);
 listingRouter.patch(
 	"/:id",
+	writeRateLimit,
 	requireAuth,
 	validate(listingIdSchema, "params"),
 	validate(updateListingSchema),
 	updateListing
 );
-listingRouter.delete("/:id", requireAuth, validate(listingIdSchema, "params"), deleteListing);
+listingRouter.delete(
+	"/:id",
+	writeRateLimit,
+	requireAuth,
+	validate(listingIdSchema, "params"),
+	deleteListing
+);

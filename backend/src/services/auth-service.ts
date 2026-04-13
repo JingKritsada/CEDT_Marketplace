@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 
+import { env } from "../config/env";
 import { prisma } from "../config/prisma";
 import type { LoginInput } from "../models/auth-model";
 import { ApiError } from "../utils/api-error";
@@ -16,7 +17,7 @@ interface AuthResult {
 	};
 }
 
-const buildStudentId = (email: string): string => {
+const extractUsernameFromEmail = (email: string): string => {
 	return email.split("@")[0];
 };
 
@@ -49,13 +50,13 @@ export const authService = {
 		let user = existingUser;
 
 		if (!user) {
-			const passwordHash = await bcrypt.hash(input.password, 12);
+			const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_SALT_ROUNDS);
 
 			user = await prisma.user.create({
 				data: {
 					email: input.email,
-					displayName: buildStudentId(input.email),
-					studentId: buildStudentId(input.email),
+					displayName: extractUsernameFromEmail(input.email),
+					studentId: extractUsernameFromEmail(input.email),
 					passwordHash,
 				},
 			});
@@ -80,7 +81,7 @@ export const authService = {
 		};
 	},
 
-	async refresh(token: string): Promise<{ accessToken: string }> {
+	async refresh(token: string): Promise<{ accessToken: string; refreshToken: string }> {
 		const payload = verifyRefreshToken(token);
 
 		const existingToken = await prisma.refreshToken.findUnique({
@@ -99,8 +100,10 @@ export const authService = {
 			throw new ApiError("User not found", 404);
 		}
 
-		return {
-			accessToken: createAccessToken({ sub: user.id, email: user.email }),
-		};
+		await prisma.refreshToken.delete({
+			where: { token },
+		});
+
+		return issueTokens(user.id, user.email);
 	},
 };

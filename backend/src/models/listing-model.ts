@@ -6,7 +6,7 @@ export const createListingSchema = z.object({
 	description: z.string().trim().min(1),
 	price: z.number().int().min(0),
 	isFree: z.boolean().default(false),
-	status: z.enum(ListingStatus).optional(),
+	status: z.enum(ListingStatus).default(ListingStatus.AVAILABLE),
 	condition: z.enum(ListingCondition).default(ListingCondition.GOOD),
 	categoryId: z.string().trim().min(1).optional(),
 	pickupLocationId: z.string().trim().min(1).optional(),

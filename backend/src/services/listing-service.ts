@@ -94,6 +94,10 @@ export const listingService = {
 	},
 
 	async search(query: ListingQueryInput) {
+		if (!query.search) {
+			throw new ApiError("Search query parameter is required", 400);
+		}
+
 		return this.getAll(query);
 	},
 

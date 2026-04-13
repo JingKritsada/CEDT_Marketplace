@@ -27,9 +27,11 @@ export const errorHandler = (
 	}
 
 	if (err instanceof Prisma.PrismaClientKnownRequestError) {
+		const details = process.env.NODE_ENV === "production" ? undefined : err.message;
+
 		res.status(400).json({
 			message: "Database request failed",
-			details: err.message,
+			details,
 		});
 		return;
 	}
