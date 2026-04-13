@@ -1,0 +1,21 @@
+import type { Server as HttpServer } from "node:http";
+
+import { Server } from "socket.io";
+
+import { allowedOrigins } from "@/config/cors.js";
+
+import { registerChatSocket } from "./chat-socket.js";
+
+export const registerSockets = (server: HttpServer): Server => {
+	const io = new Server(server, {
+		cors: {
+			origin: allowedOrigins,
+		},
+	});
+
+	io.on("connection", (socket) => {
+		registerChatSocket(io, socket);
+	});
+
+	return io;
+};
