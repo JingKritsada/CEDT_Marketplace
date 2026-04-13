@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
-import { pickupLocationService } from "../services/pickup-location-service";
-import { asyncHandler } from "../utils/async-handler";
+import { asyncHandler } from "@/utils/async-handler.js";
+import { pickupLocationService } from "@/services/pickup-location-service.js";
 
 export const getPickupLocations = asyncHandler(async (_req: Request, res: Response) => {
 	const pickupLocations = await pickupLocationService.getAll();

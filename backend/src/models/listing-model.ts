@@ -1,5 +1,95 @@
-import { ListingCondition, ListingStatus } from "@prisma/client";
 import { z } from "zod";
+import { ListingCondition, ListingStatus } from "@prisma/client";
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     CreateListingInput:
+ *       type: object
+ *       required:
+ *         - title
+ *         - description
+ *         - price
+ *       properties:
+ *         title:
+ *           type: string
+ *           maxLength: 140
+ *           minLength: 1
+ *         description:
+ *           type: string
+ *           minLength: 1
+ *         price:
+ *           type: integer
+ *           minimum: 0
+ *         isFree:
+ *           type: boolean
+ *           default: false
+ *         status:
+ *           type: string
+ *           enum: [AVAILABLE, PENDING, SOLD]
+ *           default: AVAILABLE
+ *         condition:
+ *           type: string
+ *           enum: [LIKE_NEW, GOOD, FAIR, POOR, FOR_PARTS]
+ *           default: GOOD
+ *         categoryId:
+ *           type: string
+ *           minLength: 1
+ *         pickupLocationId:
+ *           type: string
+ *           minLength: 1
+ *         courseCode:
+ *           type: string
+ *           maxLength: 16
+ *           minLength: 1
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: uri
+ *     UpdateListingInput:
+ *       type: object
+ *       properties:
+ *         title:
+ *           type: string
+ *         description:
+ *           type: string
+ *         price:
+ *           type: integer
+ *         isFree:
+ *           type: boolean
+ *         status:
+ *           type: string
+ *         condition:
+ *           type: string
+ *         categoryId:
+ *           type: string
+ *         pickupLocationId:
+ *           type: string
+ *         courseCode:
+ *           type: string
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *     ListingQueryInput:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: string
+ *           enum: [AVAILABLE, PENDING, SOLD]
+ *         categoryId:
+ *           type: string
+ *         courseCode:
+ *           type: string
+ *         minPrice:
+ *           type: integer
+ *         maxPrice:
+ *           type: integer
+ *         search:
+ *           type: string
+ */
 
 export const createListingSchema = z.object({
 	title: z.string().trim().min(1).max(140),

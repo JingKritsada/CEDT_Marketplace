@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
-import { authService } from "../services/auth-service";
-import { asyncHandler } from "../utils/async-handler";
+import { asyncHandler } from "@/utils/async-handler.js";
+import { authService } from "@/services/auth-service.js";
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
 	const result = await authService.login(req.body);

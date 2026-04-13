@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { ApiError } from "../utils/api-error";
-import { verifyAccessToken } from "../utils/token";
+import { ApiError } from "@/utils/api-error.js";
+import { verifyAccessToken } from "@/utils/token.js";
 
 declare global {
 	namespace Express {
@@ -19,6 +19,7 @@ export const requireAuth = (req: Request, _res: Response, next: NextFunction): v
 
 	if (!authorization?.startsWith("Bearer ")) {
 		next(new ApiError("Unauthorized", 401));
+
 		return;
 	}
 

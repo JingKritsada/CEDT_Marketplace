@@ -1,5 +1,5 @@
-import { prisma } from "../config/prisma";
-import { ApiError } from "../utils/api-error";
+import { prisma } from "@/config/prisma.js";
+import { ApiError } from "@/utils/api-error.js";
 
 export const userService = {
 	async getById(id: string) {

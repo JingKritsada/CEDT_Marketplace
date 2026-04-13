@@ -1,4 +1,5 @@
 import type { Server, Socket } from "socket.io";
+
 import { z } from "zod";
 
 const joinRoomSchema = z.object({
@@ -23,12 +24,14 @@ const parseJoinPayload = (payload: unknown): { roomId: string } | null => {
 	}
 
 	const result = joinRoomSchema.safeParse(payload);
+
 	return result.success ? result.data : null;
 };
 
 export const registerChatSocket = (io: Server, socket: Socket): void => {
 	socket.on("join_room", (payload: unknown) => {
 		const parsedPayload = parseJoinPayload(payload);
+
 		if (!parsedPayload) {
 			return;
 		}
@@ -38,6 +41,7 @@ export const registerChatSocket = (io: Server, socket: Socket): void => {
 
 	socket.on("send_message", (payload: unknown) => {
 		const parsedPayload = sendMessageSchema.safeParse(payload);
+
 		if (!parsedPayload.success || !socket.rooms.has(parsedPayload.data.roomId)) {
 			return;
 		}
@@ -51,6 +55,7 @@ export const registerChatSocket = (io: Server, socket: Socket): void => {
 
 	socket.on("typing", (payload: unknown) => {
 		const parsedPayload = typingSchema.safeParse(payload);
+
 		if (!parsedPayload.success || !socket.rooms.has(parsedPayload.data.roomId)) {
 			return;
 		}

@@ -3,7 +3,7 @@ import test from "node:test";
 
 import request from "supertest";
 
-import { app } from "../src/app";
+import { app } from "../src/app.js";
 
 test("GET /health returns ok status", async () => {
 	const response = await request(app).get("/health");

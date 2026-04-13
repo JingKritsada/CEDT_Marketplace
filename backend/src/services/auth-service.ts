@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 
-import { env } from "../config/env";
-import { prisma } from "../config/prisma";
-import type { LoginInput } from "../models/auth-model";
-import { ApiError } from "../utils/api-error";
-import { createAccessToken, createRefreshToken, verifyRefreshToken } from "../utils/token";
+import { env } from "@/config/env.js";
+import { prisma } from "@/config/prisma.js";
+import { ApiError } from "@/utils/api-error.js";
+import type { LoginInput } from "@/models/auth-model.js";
+import { createAccessToken, createRefreshToken, verifyRefreshToken } from "@/utils/token.js";
 
 interface AuthResult {
 	accessToken: string;

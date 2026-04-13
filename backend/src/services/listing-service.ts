@@ -1,12 +1,12 @@
 import { Prisma } from "@prisma/client";
 
-import { prisma } from "../config/prisma";
 import type {
 	CreateListingInput,
 	ListingQueryInput,
 	UpdateListingInput,
-} from "../models/listing-model";
-import { ApiError } from "../utils/api-error";
+} from "@/models/listing-model.js";
+import { prisma } from "@/config/prisma.js";
+import { ApiError } from "@/utils/api-error.js";
 
 const buildFilter = (query: ListingQueryInput): Prisma.ListingWhereInput => {
 	const where: Prisma.ListingWhereInput = {};

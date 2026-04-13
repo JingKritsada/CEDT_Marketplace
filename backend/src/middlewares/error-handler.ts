@@ -1,8 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
-import { Prisma } from "@prisma/client";
-import { ZodError } from "zod";
 
-import { ApiError } from "../utils/api-error";
+import { ZodError } from "zod";
+import { Prisma } from "@prisma/client";
+
+import { ApiError } from "@/utils/api-error.js";
 
 export const errorHandler = (
 	err: unknown,
@@ -15,6 +16,7 @@ export const errorHandler = (
 			message: err.message,
 			details: err.details,
 		});
+
 		return;
 	}
 
@@ -23,6 +25,7 @@ export const errorHandler = (
 			message: "Validation failed",
 			details: err.issues,
 		});
+
 		return;
 	}
 
@@ -33,6 +36,7 @@ export const errorHandler = (
 			message: "Database request failed",
 			details,
 		});
+
 		return;
 	}
 

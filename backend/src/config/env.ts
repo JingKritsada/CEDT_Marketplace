@@ -1,12 +1,12 @@
-import dotenv from "dotenv";
 import { z } from "zod";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const envSchema = z.object({
 	NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-	PORT: z.coerce.number().int().positive().default(3000),
-	CORS_ORIGIN: z.string().default("http://localhost:3000"),
+	PORT: z.coerce.number().int().positive().default(3003),
+	CORS_ORIGIN: z.string().default("http://localhost:3003"),
 	BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
 	JWT_SECRET: z.string().min(32).optional(),
 	JWT_REFRESH_SECRET: z.string().min(32).optional(),

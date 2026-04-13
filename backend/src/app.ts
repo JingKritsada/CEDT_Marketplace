@@ -1,14 +1,17 @@
-import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import express from "express";
 
-import { allowedOrigins } from "./config/cors";
-import { errorHandler } from "./middlewares/error-handler";
-import { notFoundHandler } from "./middlewares/not-found";
-import { apiRouter } from "./routes";
+import { apiRouter } from "./routes/index.js";
+import { allowedOrigins } from "./config/cors.js";
+import { setupSwagger } from "./config/swagger.js";
+import { errorHandler } from "./middlewares/error-handler.js";
+import { notFoundHandler } from "./middlewares/not-found.js";
 
 export const app = express();
+
+setupSwagger(app);
 
 app.use(helmet());
 app.use(

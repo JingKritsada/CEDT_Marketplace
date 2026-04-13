@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 
-import { env } from "./config/env";
-import { app } from "./app";
-import { registerSockets } from "./sockets";
+import { app } from "./app.js";
+import { env } from "./config/env.js";
+import { registerSockets } from "./sockets/index.js";
 
 const server = createServer(app);
 

@@ -11,9 +11,11 @@ export const validate =
 
 		if (!result.success) {
 			next(result.error);
+
 			return;
 		}
 
 		req[target] = result.data;
+
 		next();
 	};

@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
-import { listingService } from "../services/listing-service";
-import { asyncHandler } from "../utils/async-handler";
+import { asyncHandler } from "@/utils/async-handler.js";
+import { listingService } from "@/services/listing-service.js";
 
 const getListingId = (id: string | string[]): string => {
 	return Array.isArray(id) ? id[0] : id;

@@ -1,10 +1,10 @@
 import { Router } from "express";
 
-import { authRouter } from "./auth-route";
-import { categoryRouter } from "./category-route";
-import { listingRouter } from "./listing-route";
-import { pickupLocationRouter } from "./pickup-location-route";
-import { userRouter } from "./user-route";
+import { userRouter } from "./user-route.js";
+import { authRouter } from "./auth-route.js";
+import { listingRouter } from "./listing-route.js";
+import { categoryRouter } from "./category-route.js";
+import { pickupLocationRouter } from "./pickup-location-route.js";
 
 export const apiRouter = Router();
 
