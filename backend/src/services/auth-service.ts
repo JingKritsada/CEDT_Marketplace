@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { env } from "@/config/env.js";
 import { prisma } from "@/config/prisma.js";
 import { ApiError } from "@/utils/api-error.js";
-import type { LoginInput } from "@/models/auth-model.js";
+import type { LoginInput, RegisterInput } from "@/models/auth-model.js";
 import { createAccessToken, createRefreshToken, verifyRefreshToken } from "@/utils/token.js";
 
 interface AuthResult {
@@ -42,6 +42,39 @@ const issueTokens = async (
 };
 
 export const authService = {
+	async register(input: RegisterInput): Promise<AuthResult> {
+		const existingUser = await prisma.user.findUnique({
+			where: { email: input.email },
+		});
+
+		if (existingUser) {
+			throw new ApiError("Email already registered", 400);
+		}
+
+		const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_SALT_ROUNDS);
+
+		const user = await prisma.user.create({
+			data: {
+				studentId: input.studentId,
+				email: input.email,
+				displayName: input.displayName,
+				passwordHash,
+			},
+		});
+
+		const tokens = await issueTokens(user.id, user.email);
+
+		return {
+			...tokens,
+			user: {
+				id: user.id,
+				email: user.email,
+				displayName: user.displayName,
+				studentId: user.studentId,
+			},
+		};
+	},
+
 	async login(input: LoginInput): Promise<AuthResult> {
 		const existingUser = await prisma.user.findUnique({
 			where: { email: input.email },
@@ -105,5 +138,11 @@ export const authService = {
 		});
 
 		return issueTokens(user.id, user.email);
+	},
+
+	async logout(token: string): Promise<void> {
+		await prisma.refreshToken.deleteMany({
+			where: { token },
+		});
 	},
 };

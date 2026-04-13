@@ -3,6 +3,12 @@ import type { Request, Response } from "express";
 import { asyncHandler } from "@/utils/async-handler.js";
 import { authService } from "@/services/auth-service.js";
 
+export const register = asyncHandler(async (req: Request, res: Response) => {
+	const result = await authService.register(req.body);
+
+	res.status(201).json({ message: "User registered successfully", ...result });
+});
+
 export const login = asyncHandler(async (req: Request, res: Response) => {
 	const result = await authService.login(req.body);
 
@@ -13,4 +19,10 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
 	const result = await authService.refresh(req.body.refreshToken);
 
 	res.status(200).json(result);
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+	await authService.logout(req.body.refreshToken);
+
+	res.status(200).json({ message: "Logged out successfully" });
 });
