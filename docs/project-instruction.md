@@ -1,6 +1,6 @@
 # CEDT Community Marketplace
 
-### Project Instruction Document
+## Project Instruction Document
 
 **Backend:** Node.js | **Frontend:** SwiftUI (iOS)
 
@@ -100,7 +100,7 @@ CEDT Community Marketplace addresses each pain point with purpose-built features
 
 ### 5.2 Project Structure
 
-```
+```text
 /cedt-marketplace-backend
 ├── src/
 │   ├── config/          # DB, env, constants
@@ -120,7 +120,7 @@ CEDT Community Marketplace addresses each pain point with purpose-built features
 
 ### 5.3 Database Schema (Key Models)
 
-```
+```text
 User            id, studentId, email, displayName, avatarUrl, createdAt
 Listing         id, sellerId, title, description, price, isFree,
                 status (AVAILABLE | RESERVED | SOLD),
@@ -133,22 +133,19 @@ PickupLocation  id, name, building, description
 
 ### 5.4 API Endpoints
 
-| Method + Path                  | Description                     | Auth Required |
-| ------------------------------ | ------------------------------- | ------------- |
-| `POST /auth/login`             | Student login, returns JWT      | No            |
-| `POST /auth/refresh`           | Refresh access token            | No            |
-| `GET /listings`                | Fetch all listings (filterable) | No            |
-| `POST /listings`               | Create new listing              | Yes           |
-| `GET /listings/:id`            | Get single listing detail       | No            |
-| `PATCH /listings/:id`          | Update listing or status        | Yes (owner)   |
-| `DELETE /listings/:id`         | Delete listing                  | Yes (owner)   |
-| `GET /listings/search`         | Full-text search + filters      | No            |
-| `GET /categories`              | List all categories             | No            |
-| `GET /chat/rooms`              | User's chat rooms               | Yes           |
-| `POST /chat/rooms`             | Create chat room for listing    | Yes           |
-| `GET /chat/rooms/:id/messages` | Fetch message history           | Yes           |
-| `GET /users/me`                | Get current user profile        | Yes           |
-| `GET /pickup-locations`        | List pickup spots               | No            |
+| Method + Path           | Description                     | Auth Required |
+| ----------------------- | ------------------------------- | ------------- |
+| `POST /auth/login`      | Student login, returns JWT      | No            |
+| `POST /auth/refresh`    | Refresh access token            | No            |
+| `GET /listings`         | Fetch all listings (filterable) | No            |
+| `POST /listings`        | Create new listing              | Yes           |
+| `GET /listings/:id`     | Get single listing detail       | No            |
+| `PATCH /listings/:id`   | Update listing or status        | Yes (owner)   |
+| `DELETE /listings/:id`  | Delete listing                  | Yes (owner)   |
+| `GET /listings/search`  | Full-text search + filters      | No            |
+| `GET /categories`       | List all categories             | No            |
+| `GET /users/me`         | Get current user profile        | Yes           |
+| `GET /pickup-locations` | List pickup spots               | No            |
 
 ### 5.5 WebSocket Events (Chat via Socket.io)
 
@@ -200,7 +197,7 @@ NODE_ENV=development
 
 ### 6.2 Project Structure
 
-```
+```text
 /CEDTMarketplace.xcodeproj
 ├── App/
 │   ├── CEDTMarketplaceApp.swift    # @main entry point
@@ -305,7 +302,7 @@ struct APIClient {
 
 ### 7.2 Commit Convention
 
-```
+```text
 feat: add listing category filter
 fix: resolve JWT token expiry crash on iOS
 chore: update Prisma schema with PickupLocation model
@@ -369,5 +366,3 @@ npm run dev   # uses nodemon
 | Privacy     | No personal data exposed in public listing API responses            |
 
 ---
-
-_CEDT Community Marketplace — Project Instruction v1.0_

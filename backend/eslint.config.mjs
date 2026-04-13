@@ -69,6 +69,8 @@ export default [
 				},
 			],
 
+			"import/extensions": ["error", "ignorePackages"],
+
 			"import/order": [
 				"warn",
 				{

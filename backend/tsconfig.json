@@ -1,17 +1,16 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
-		"module": "CommonJS",
+		"module": "NodeNext",
 		"lib": ["ES2022"],
 		"skipLibCheck": true,
 		"esModuleInterop": true,
 		"allowImportingTsExtensions": true,
-		"moduleResolution": "node",
+		"moduleResolution": "NodeNext",
 		"moduleDetection": "force",
 		"noEmit": true,
 
 		/* Path aliases */
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*"]
 		},
