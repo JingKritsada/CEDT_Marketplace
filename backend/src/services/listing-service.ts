@@ -42,8 +42,8 @@ const buildFilter = (query: ListingQueryInput): Prisma.ListingWhereInput => {
 
 	if (query.minPrice !== undefined || query.maxPrice !== undefined) {
 		where.price = {
-			gte: query.minPrice,
-			lte: query.maxPrice,
+			gte: (query.minPrice && !isNaN(Number(query.minPrice))) ? Number(query.minPrice) : undefined,
+			lte: (query.maxPrice && !isNaN(Number(query.maxPrice))) ? Number(query.maxPrice) : undefined,
 		};
 	}
 
@@ -94,9 +94,9 @@ export const listingService = {
 	},
 
 	async search(query: ListingQueryInput) {
-		if (!query.search) {
-			throw new ApiError("Search query parameter is required", 400);
-		}
+		// if (!query.search) {
+		// 	throw new ApiError("Search query parameter is required", 400);
+		// }
 
 		return this.getAll(query);
 	},

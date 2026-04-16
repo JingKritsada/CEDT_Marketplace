@@ -6,16 +6,14 @@ export const validate =
 		schema: T,
 		target: "body" | "query" | "params" = "body"
 	): RequestHandler =>
-	(req, _res, next) => {
-		const result = schema.safeParse(req[target]);
+		(req, _res, next) => {
+			const result = schema.safeParse(req[target]);
 
-		if (!result.success) {
-			next(result.error);
+			if (!result.success) {
+				next(result.error);
+				return;
+			}
+			Object.assign(req[target] as object, result.data);
 
-			return;
-		}
-
-		req[target] = result.data;
-
-		next();
-	};
+			next();
+		};

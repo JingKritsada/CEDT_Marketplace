@@ -94,25 +94,25 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
 export const createListingSchema = z.object({
 	title: z.string().trim().min(1).max(140),
 	description: z.string().trim().min(1),
-	price: z.number().int().min(0),
-	isFree: z.boolean().default(false),
+	price: z.coerce.number().min(0),
+	isFree: z.coerce.boolean().default(false),
 	status: z.enum(ListingStatus).default(ListingStatus.AVAILABLE),
 	condition: z.enum(ListingCondition).default(ListingCondition.GOOD),
-	categoryId: z.string().trim().min(1).optional(),
-	pickupLocationId: z.string().trim().min(1).optional(),
+	categoryId: z.string().trim().min(1),
+	pickupLocationId: z.string().trim().min(1),
 	courseCode: z.string().trim().min(1).max(16).optional(),
-	images: z.array(z.url()).default([]),
+	images: z.array(z.string()).default([]),
 });
 
 export const updateListingSchema = createListingSchema.partial();
 
 export const listingQuerySchema = z.object({
 	status: z.enum(ListingStatus).optional(),
-	categoryId: z.string().trim().min(1).optional(),
-	courseCode: z.string().trim().min(1).optional(),
+	categoryId: z.string().trim().optional(),
+	courseCode: z.string().trim().optional(),
 	minPrice: z.coerce.number().int().min(0).optional(),
 	maxPrice: z.coerce.number().int().min(0).optional(),
-	search: z.string().trim().min(1).optional(),
+	search: z.string().trim().optional(),
 });
 
 export const listingIdSchema = z.object({

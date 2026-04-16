@@ -11,6 +11,9 @@ export const errorHandler = (
 	res: Response,
 	_next: NextFunction
 ): void => {
+
+	console.error("Error caught by Global Handler:", err);
+
 	if (err instanceof ApiError) {
 		res.status(err.statusCode).json({
 			message: err.message,
@@ -20,10 +23,10 @@ export const errorHandler = (
 		return;
 	}
 
-	if (err instanceof ZodError) {
+	if (err instanceof ZodError || (err as any)?.name === "ZodError") {
 		res.status(400).json({
 			message: "Validation failed",
-			details: err.issues,
+			details: (err as any).issues || (err as any).errors,
 		});
 
 		return;
