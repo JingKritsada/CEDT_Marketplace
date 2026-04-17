@@ -36,7 +36,7 @@ struct ListingCard: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                
+                Spacer()
                 HStack {
                     Text(listing.isFree ? "฿0" : "฿\(Int(listing.price))")
                         .font(.headline)
@@ -49,6 +49,7 @@ struct ListingCard: View {
             }
             .padding(.horizontal, 4)
         }
+        .frame(width: 170 ,height: 230)
         .padding(8)
         .background(Color.white)
         .cornerRadius(15)

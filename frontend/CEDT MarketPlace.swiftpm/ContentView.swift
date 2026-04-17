@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab: Tab = .home
+    @StateObject private var navManager = NavigationManager()
     
     // ซ่อน Tab Bar มาตรฐานของระบบ
     init() {
@@ -15,21 +16,25 @@ struct ContentView: View {
                 switch selectedTab {
                 case .home:
                     HomeView()
+//                        .padding(.bottom, 80)
                 case .post:
                     Text("Post View")
                 case .cart:
                     Text("Cart View")
                 case .alerts:
-                    Text("Alerts View")
+                    Text("Alerts View") 
                 case .profile:
                     Text("Profile View")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            // วาง Custom Tab Bar ไว้ด้านล่างสุด
-            CustomTabBar(selectedTab: $selectedTab)
+            if !navManager.isTabBarHidden {
+                CustomTabBar(selectedTab: $selectedTab)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .environmentObject(navManager)
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
@@ -54,6 +59,7 @@ enum Tab: String, CaseIterable {
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Tab
+    
     
     var body: some View {
         HStack {

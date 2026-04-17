@@ -14,9 +14,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                
                 appHeader.padding(.bottom, 15)
-                // ส่วนบนคงที่
                 searchHeader.padding(.bottom, 15)
                 
                 ScrollView {
@@ -28,29 +26,32 @@ struct HomeView: View {
                             ForEach(viewModel.listings) { listing in
                                 let category = viewModel.categories.first(where: { $0.id == listing.categoryId })
                                 let name = category?.name ?? "General"
+                                
+                                // NavigationLink จะส่งค่า "listing" ออกไป
                                 NavigationLink(value: listing) {
                                     ListingCard(listing: listing, categoryName: name)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
-                            .padding(.horizontal)
                         }
-                        .padding(.bottom, 20)
+                        .padding(.horizontal)
+                        
                         lockerCTA
                     }
                 }
                 .padding(.bottom, 80)
                 .navigationBarHidden(true)
-                .task {
-                    await viewModel.fetchAllData()
-//                    async let fetchListings: () = viewModel.fetchListings()
-//                    async let fetchCategories: () = viewModel.fetchCategories()
-//                    async let fetchUser: () = userViewModel.fetchMe()
-//                                    
-//                    _ = await [fetchListings, fetchCategories, fetchUser]
-               }
+                
+                .navigationDestination(for: Listing.self) { listing in
+                    ListingDetailView(listing: listing, viewModel: viewModel)
+                }
             }
-        }
+            .task {
+                await viewModel.fetchAllData()
+                await userViewModel.fetchMe()
+                await viewModel.fetchPickupLocations()
+            }
+        } // จบ NavigationStack
     }
     var lockerCTA: some View {
         HStack {

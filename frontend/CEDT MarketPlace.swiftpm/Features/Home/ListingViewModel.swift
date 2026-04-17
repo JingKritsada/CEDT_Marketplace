@@ -13,6 +13,7 @@ class ListingViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var selectedCategoryId: String? = nil
     @Published var isLoading = false
+    @Published var pickupLocations: [PickupLocation] = []
     
     func fetchCategories() async {
             do {
@@ -41,6 +42,14 @@ class ListingViewModel: ObservableObject {
             selectedCategoryId = categoryId
             await fetchListings()
         }
+    
+    func fetchPickupLocations() async {
+        do {
+            self.pickupLocations = try await APIClient.shared.request(path: "/pickup-locations")
+        } catch {
+            print("Pickup Error: \(error)")
+        }
+    }
     
     func fetchAllData() async {
         self.isLoading = true

@@ -24,6 +24,7 @@ struct Listing: Codable, Identifiable, Hashable {
     let condition: String?
     let courseCode: String?
     let categoryId: String
+    let pickupLocationId: String?
     let images: [String]
     
     let contactLine: String?
