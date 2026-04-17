@@ -9,13 +9,29 @@ import Foundation
 
 actor APIClient {
     static let shared = APIClient()
-    private let baseURL = "http://localhost:3000"
+    private let baseURL = "http://localhost:3003"
 
-    private init() {}
-
-    func request<T: Decodable>(path: String) async throws -> T {
+    func request<T: Decodable>(
+        path: String,
+        method: String = "GET",
+        body: Encodable? = nil
+    ) async throws -> T {
         guard let url = URL(string: baseURL + path) else { throw URLError(.badURL) }
-        let (data, _) = try await URLSession.shared.data(from: url)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        if let body = body {
+            request.httpBody = try JSONEncoder().encode(body)
+        }
+        
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
         
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
