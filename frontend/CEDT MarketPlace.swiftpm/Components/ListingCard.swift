@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ListingCard: View {
     let listing: Listing
+    let categoryName: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -19,8 +20,7 @@ struct ListingCard: View {
                 .cornerRadius(15)
                 .clipped()
                 
-                // Badge มุมบน (เช่น FREE หรือ SENSORS)
-                Text(listing.isFree ? "FREE" : "SENSORS")
+                Text(listing.isFree ? "FREE" : categoryName.uppercased())
                     .font(.system(size: 10, weight: .bold))
                     .padding(6)
                     .background(Color.white.opacity(0.9))

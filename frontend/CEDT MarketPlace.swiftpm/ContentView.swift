@@ -1,25 +1,101 @@
 import SwiftUI
 
 struct ContentView: View {
-    // ในอนาคต (Commit 10) เราจะเพิ่ม Logic เช็คสถานะการ Login ที่นี่ครับ
+    @State private var selectedTab: Tab = .home
+    
+    // ซ่อน Tab Bar มาตรฐานของระบบ
+    init() {
+        UITabBar.appearance().isHidden = true
+    }
     
     var body: some View {
-        TabView {
-            HomeView()
-                .tabItem {
-                    Label("Market", systemImage: "house.fill")
+        ZStack(alignment: .bottom) {
+            // ส่วนแสดงเนื้อหาตาม Tab ที่เลือก
+            Group {
+                switch selectedTab {
+                case .home:
+                    HomeView()
+                case .post:
+                    Text("Post View")
+                case .cart:
+                    Text("Cart View")
+                case .alerts:
+                    Text("Alerts View")
+                case .profile:
+                    Text("Profile View")
                 }
-
-            Text("Create Listing (Coming Soon)")
-                .tabItem {
-                    Label("Sell", systemImage: "plus.circle.fill")
-                }
-
-            Text("Profile & Settings (Coming Soon)")
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
-                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // วาง Custom Tab Bar ไว้ด้านล่างสุด
+            CustomTabBar(selectedTab: $selectedTab)
         }
-        .accentColor(.pink)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+}
+
+enum Tab: String, CaseIterable {
+    case home = "HOME"
+    case post = "POST"
+    case cart = "CART"
+    case alerts = "ALERTS"
+    case profile = "PROFILE"
+    
+    var icon: String {
+        switch self {
+        case .home: return "house.fill"
+        case .post: return "plus.circle"
+        case .cart: return "cart"
+        case .alerts: return "bell"
+        case .profile: return "person"
+        }
+    }
+}
+
+struct CustomTabBar: View {
+    @Binding var selectedTab: Tab
+    
+    var body: some View {
+        HStack {
+            ForEach(Tab.allCases, id: \.self) { tab in
+                Spacer()
+                Button {
+                    withAnimation(.spring()) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: tab.icon)
+                            .font(.system(size: 16))
+                        
+                        Text(tab.rawValue)
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .foregroundColor(selectedTab == tab ? .pink : .secondary)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(
+                        selectedTab == tab ? Color.pink.opacity(0.1) : Color.clear
+                    )
+                    .cornerRadius(20)
+                }
+                Spacer()
+            }
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 5)
+        .background(Color.white.shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: -5)
+            .ignoresSafeArea(edges: .bottom))
+        .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
+        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: -5)
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
     }
 }

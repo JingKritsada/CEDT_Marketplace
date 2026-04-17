@@ -14,3 +14,4 @@ struct User: Codable, Identifiable, Hashable {
     let displayName: String
     let avatarUrl: String?
 }
+

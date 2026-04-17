@@ -9,10 +9,13 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = ListingViewModel()
+    @StateObject private var userViewModel = UserViewModel()
     
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                
+                appHeader.padding(.bottom, 15)
                 // ส่วนบนคงที่
                 searchHeader.padding(.bottom, 15)
                 
@@ -23,9 +26,12 @@ struct HomeView: View {
                         
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
                             ForEach(viewModel.listings) { listing in
+                                let category = viewModel.categories.first(where: { $0.id == listing.categoryId })
+                                let name = category?.name ?? "General"
                                 NavigationLink(value: listing) {
-                                    ListingCard(listing: listing)
+                                    ListingCard(listing: listing, categoryName: name)
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                             .padding(.horizontal)
                         }
@@ -33,9 +39,15 @@ struct HomeView: View {
                         lockerCTA
                     }
                 }
+                .padding(.bottom, 80)
                 .navigationBarHidden(true)
                 .task {
-                    await viewModel.fetchListings()
+                    await viewModel.fetchAllData()
+//                    async let fetchListings: () = viewModel.fetchListings()
+//                    async let fetchCategories: () = viewModel.fetchCategories()
+//                    async let fetchUser: () = userViewModel.fetchMe()
+//                                    
+//                    _ = await [fetchListings, fetchCategories, fetchUser]
                }
             }
         }
@@ -92,6 +104,37 @@ struct HomeView: View {
         .padding(.horizontal)
     }
 
+    var appHeader: some View {
+        HStack(spacing: 12) {
+            if let avatarUrl = userViewModel.currentUser?.avatarUrl,
+                let url = URL(string: avatarUrl) {
+                            
+                AsyncImage(url: url) { image in
+                    image.resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Circle().foregroundColor(.gray.opacity(0.1))
+                }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+                             
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+                    .foregroundColor(.gray)
+            }
+            Text("CEDT Marketplace")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(Color(.systemPink))
+            
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.top, 10)
+    }
 
     var featuredBanner: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -124,7 +167,6 @@ struct HomeView: View {
     var categoryBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                // ปุ่ม "All Items"
                 CategoryButton(
                     title: "All Items",
                     isActive: viewModel.selectedCategoryId == nil
@@ -132,7 +174,6 @@ struct HomeView: View {
                     Task { await viewModel.selectCategory(nil) }
                 }
                 
-                // ปุ่มหมวดหมู่จาก Database
                 ForEach(viewModel.categories) { category in
                     CategoryButton(
                         title: category.name,
@@ -143,9 +184,6 @@ struct HomeView: View {
                 }
             }
             .padding(.horizontal)
-        }
-        .task {
-            await viewModel.fetchCategories()
         }
     }
 }
@@ -161,7 +199,7 @@ struct CategoryButton: View {
                 .font(.subheadline).bold()
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isActive ? Color.pink : Color(.systemGray6)) // สีตาม Figma
+                .background(isActive ? Color.pink : Color(.systemGray6))
                 .foregroundColor(isActive ? .white : .primary)
                 .cornerRadius(10)
         }

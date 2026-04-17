@@ -42,37 +42,13 @@ class ListingViewModel: ObservableObject {
             await fetchListings()
         }
     
-    private func loadMockData() {
-        self.listings = [
-            Listing(
-                id: "1",
-                sellerId: "u1",
-                title: "Arduino Uno Rev3",
-                description: "สภาพดี ใช้งานได้ปกติ 100%",
-                price: 0,
-                isFree: true,
-                status: .available,
-                condition: "Good",
-                courseCode: "2110101",
-                images: ["https://picsum.photos/id/1/400/400"],
-                contactLine: "phachara_line",
-                contactIG: nil
-            ),
-            Listing(
-                id: "2",
-                sellerId: "u2",
-                title: "Infrared Sensor",
-                description: "Sharp GP2Y0A21YK0F ของใหม่ยังไม่แกะ",
-                price: 150,
-                isFree: false,
-                status: .available,
-                condition: "Good",
-                courseCode: "2110427",
-                images: ["https://picsum.photos/id/2/400/400"],
-                contactLine: nil,
-                contactIG: "cedt_sensors"
-            )
-        ]
+    func fetchAllData() async {
+        self.isLoading = true
+        async let categoriesTask = fetchCategories()
+        async let listingsTask = fetchListings()
+        
+        _ = await [categoriesTask, listingsTask]
+        self.isLoading = false
     }
     
 }
