@@ -124,11 +124,28 @@ struct HomeView: View {
     var categoryBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                CategoryButton(title: "All Items", isActive: true)
-                CategoryButton(title: "Micro-controllers", isActive: false) //
-                CategoryButton(title: "Sensors", isActive: false)
+                // ปุ่ม "All Items"
+                CategoryButton(
+                    title: "All Items",
+                    isActive: viewModel.selectedCategoryId == nil
+                ) {
+                    Task { await viewModel.selectCategory(nil) }
+                }
+                
+                // ปุ่มหมวดหมู่จาก Database
+                ForEach(viewModel.categories) { category in
+                    CategoryButton(
+                        title: category.name,
+                        isActive: viewModel.selectedCategoryId == category.id
+                    ) {
+                        Task { await viewModel.selectCategory(category.id) }
+                    }
+                }
             }
             .padding(.horizontal)
+        }
+        .task {
+            await viewModel.fetchCategories()
         }
     }
 }
@@ -136,13 +153,17 @@ struct HomeView: View {
 struct CategoryButton: View {
     let title: String
     let isActive: Bool
+    let action: () -> Void
+    
     var body: some View {
-        Text(title)
-            .font(.subheadline).bold()
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(isActive ? Color.pink : Color(.systemGray6))
-            .foregroundColor(isActive ? .white : .primary)
-            .cornerRadius(10)
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline).bold()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isActive ? Color.pink : Color(.systemGray6)) // สีตาม Figma
+                .foregroundColor(isActive ? .white : .primary)
+                .cornerRadius(10)
+        }
     }
 }

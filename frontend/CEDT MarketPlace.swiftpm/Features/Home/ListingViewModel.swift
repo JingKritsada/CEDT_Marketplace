@@ -10,21 +10,37 @@ import Foundation
 @MainActor
 class ListingViewModel: ObservableObject {
     @Published var listings: [Listing] = []
+    @Published var categories: [Category] = []
+    @Published var selectedCategoryId: String? = nil
     @Published var isLoading = false
     
-    func fetchListings() async {
-        self.isLoading = true
-        do {
-            // ดึงข้อมูลจริงจาก API
-            let data: [Listing] = try await APIClient.shared.request(path: "/listings")
-            print("Successfully fetched \(data.count) listings")
-            self.listings = data
-        } catch {
-            print("Detailed Error: \(error)")
-            // ถ้าดึงไม่ได้ค่อยให้มันไปเรียก loadMockData() เป็นแผนสำรองครับ
+    func fetchCategories() async {
+            do {
+                self.categories = try await APIClient.shared.request(path: "/categories")
+            } catch {
+                print("Categories Error: \(error)")
+            }
         }
-        self.isLoading = false
-    }
+    func fetchListings() async {
+            isLoading = true
+            var path = "/listings"
+            
+            if let categoryId = selectedCategoryId {
+                path += "?categoryId=\(categoryId)"
+            }
+            
+            do {
+                self.listings = try await APIClient.shared.request(path: path)
+            } catch {
+                print("Listings Error: \(error)")
+            }
+            isLoading = false
+        }
+    
+    func selectCategory(_ categoryId: String?) async {
+            selectedCategoryId = categoryId
+            await fetchListings()
+        }
     
     private func loadMockData() {
         self.listings = [
