@@ -63,3 +63,11 @@ ssl/
 # Secrets
 secrets/
 *.secret
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdata
+.DS_Store
+**/.swiftpm/xcode/xcuserdata/
