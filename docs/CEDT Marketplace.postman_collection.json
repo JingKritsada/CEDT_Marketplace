@@ -1,0 +1,470 @@
+{
+	"info": {
+		"_postman_id": "4fc5ccab-4163-4fd2-933f-3960e957701b",
+		"name": "CEDT Marketplace",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40765854"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [""],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"TOKEN\", pm.response.json().token)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": "JSON Type",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"studentId\": \"666776766767\",\n  \"email\": \"test66676@student.chula.ac.th\",\n  \"displayName\": \"Phachara1234\",\n  \"password\": \"12345678\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/register",
+							"host": ["{{URL}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [""],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test66676@student.chula.ac.th\",\n//   \"email\": \"test2@student.chula.ac.th\",\n//   \"email\": \"test1@student.chula.ac.th\",\n  \"password\": \"12345678\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/login",
+							"host": ["{{URL}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [""],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbW8weG0yOHcwMDAwZXVob3B6N3VlN3ptIiwiZW1haWwiOiJ0ZXN0NjY2NzZAc3R1ZGVudC5jaHVsYS5hYy50aCIsImlhdCI6MTc3NjMxMTE4MiwiZXhwIjoxNzc2MzEyMDgyfQ.hcUx29K-peu94lNm8t3deDUu-PIrEP8bWSOYkc-ukis\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/logout",
+							"host": ["{{URL}}"],
+							"path": ["auth", "logout"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [""],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbW8weG0yOHcwMDAwZXVob3B6N3VlN3ptIiwiZW1haWwiOiJ0ZXN0NjY2NzZAc3R1ZGVudC5jaHVsYS5hYy50aCIsImlhdCI6MTc3NjMxMDg1NSwiZXhwIjoxNzc2OTE1NjU1fQ.0KIt3CPerQF4P_cdAWny53m8gQtWEItFsKcAJUkTr90\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/refresh",
+							"host": ["{{URL}}"],
+							"path": ["auth", "refresh"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Me",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [""],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [""],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": "JSON Type",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YjYwMmZmMjY4MDE0NzAxNGM2MzkyNyIsImlhdCI6MTczOTk4MjgzMCwiZXhwIjoxNzQyNTc0ODMwfQ.y3L9ko8Tc1C20ztBg0aw4Oqad2wyGpBona5fE8pg6vg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/users/me",
+							"host": ["{{URL}}"],
+							"path": ["users", "me"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Listing",
+			"item": [
+				{
+					"name": "Get listings",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/listings",
+							"host": ["{{URL}}"],
+							"path": ["listings"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get single listing",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/listings/cmo0ztpvc0005eucp5sz8ktxd",
+							"host": ["{{URL}}"],
+							"path": ["listings", "cmo0ztpvc0005eucp5sz8ktxd"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new listing",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "// {\n//   \"title\": \"Robotics Starter Kit มือสอง\",\n//   \"description\": \"ชุดหุ่นยนต์ครบเซต มอเตอร์พร้อมล้อ ใช้งานได้ปกติทุกอย่าง\",\n//   \"price\": 850,\n//   \"isFree\": false,\n//   \"courseCode\": \"2110316\",\n//   \"categoryId\": \"cmo0yf3rc0002eu2o2xfu4k9b\",\n//   \"pickupLocationId\": \"cmo0yf4810004eu2o9f4054uf\",\n//   \"images\": [\n//     \"https://example.com/robot-kit.jpg\"\n//   ]\n// }\n\n// {\n//   \"title\": \"ESP32-WROOM-32D พร้อมสาย Micro USB\",\n//   \"description\": \"ซื้อมาทำโปรเจกต์วิชา Digital Tech ครั้งเดียว สภาพนางฟ้า ไม่เคยเสียบไฟเกิน\",\n//   \"price\": 120,\n//   \"isFree\": false,\n//   \"courseCode\": \"2110201\",\n//   \"categoryId\": \"cmo0yf3850000eu2owqz5vybd\",\n//   \"pickupLocationId\": \"cmo0yf4c50005eu2oxf6892js\",\n//   \"images\": [\n//     \"https://example.com/esp32-1.jpg\",\n//     \"https://example.com/esp32-2.jpg\"\n//   ]\n// }\n\n// {\n//   \"title\": \"เซตเซนเซอร์ Ultrasonic (HC-SR04) 5 ตัว\",\n//   \"description\": \"เหมาหมด 100 บาท ทดสอบแล้วใช้งานได้ปกติทุกตัว เอาไปทำหุ่นยนต์เดินตามเส้นได้\",\n//   \"price\": 100,\n//   \"isFree\": false,\n//   \"courseCode\": \"2110316\",\n//   \"categoryId\": \"cmo0yf3ki0001eu2ohx0jgr43\",\n//   \"pickupLocationId\": \"cmo0yf4810004eu2o9f4054uf\",\n//   \"images\": [\n//     \"https://example.com/ultrasonic.png\"\n//   ]\n// }\n\n{\n  \"title\": \"[แจกฟรี] หนังสือ Engineering Mathematics 1\",\n  \"description\": \"สภาพ 80% มีรอยจดสรุปภาษาไทยนิดหน่อย เผื่อรุ่นน้องคนไหนหาอยู่มาเอาได้เลยครับ\",\n  \"price\": 0,\n  \"isFree\": true,\n  \"courseCode\": \"2110101\",\n  \"categoryId\": \"cmo0yf3rc0002eu2o2xfu4k9b\",\n  \"pickupLocationId\": \"cmo0yf4c50005eu2oxf6892js\",\n  \"images\": [\n    \"https://example.com/calculus-book.jpg\"\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/listings",
+							"host": ["{{URL}}"],
+							"path": ["listings"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update listing or status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"SOLD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/listings/cmo10e3qh0007eumsdfbufjuo",
+							"host": ["{{URL}}"],
+							"path": ["listings", "cmo10e3qh0007eumsdfbufjuo"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete listing",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/listings/cmo10dwof0005eumsn25fk59n",
+							"host": ["{{URL}}"],
+							"path": ["listings", "cmo10dwof0005eumsn25fk59n"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "searching and filter",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/listings/search?status=AVAILABLE",
+							"host": ["{{URL}}"],
+							"path": ["listings", "search"],
+							"query": [
+								{
+									"key": "status",
+									"value": "AVAILABLE"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "categories",
+			"item": [
+				{
+					"name": "Get Categories",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/categories",
+							"host": ["{{URL}}"],
+							"path": ["categories"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Pickup-locations",
+			"item": [
+				{
+					"name": "Get List pickup spots",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/pickup-locations",
+							"host": ["{{URL}}"],
+							"path": ["pickup-locations"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
