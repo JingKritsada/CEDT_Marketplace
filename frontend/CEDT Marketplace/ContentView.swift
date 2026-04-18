@@ -16,7 +16,7 @@ struct ContentView: View {
                 switch selectedTab {
                 case .home:
                     HomeView()
-//                        .padding(.bottom, 80)
+
                 case .post:
                     Text("Post View")
                 case .cart:
@@ -104,4 +104,8 @@ struct RoundedCorner: Shape {
         let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
         return Path(path.cgPath)
     }
+}
+
+#Preview {
+	ContentView()
 }
