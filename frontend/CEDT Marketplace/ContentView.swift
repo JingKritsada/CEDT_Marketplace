@@ -18,7 +18,7 @@ struct ContentView: View {
                     HomeView()
 
                 case .post:
-                    Text("Post View")
+                    CreateListingView()
                 case .cart:
                     Text("Cart View")
                 case .alerts:

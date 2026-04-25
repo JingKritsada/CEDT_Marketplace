@@ -30,3 +30,14 @@ struct Listing: Codable, Identifiable, Hashable {
     let contactLine: String?
     let contactIG: String?
 }
+
+struct CreateListingRequest: Encodable {
+    let title: String
+    let description: String
+    let price: Double
+    let categoryId: String
+    let pickupLocationId: String
+    let courseCode: String
+    let isFree: Bool
+    let images: [String]
+}
