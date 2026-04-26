@@ -29,6 +29,9 @@ struct Listing: Codable, Identifiable, Hashable {
     
     let contactLine: String?
     let contactIG: String?
+    
+    let seller: Seller?
+    let category: Category?
 }
 
 struct CreateListingRequest: Encodable {
@@ -40,4 +43,10 @@ struct CreateListingRequest: Encodable {
     let courseCode: String
     let isFree: Bool
     let images: [String]
+}
+
+struct Seller: Codable, Hashable {
+    let id: String
+    let displayName: String
+    let avatarUrl: String?
 }

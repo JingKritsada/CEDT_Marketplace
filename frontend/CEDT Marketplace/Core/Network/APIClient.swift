@@ -32,31 +32,37 @@ actor APIClient {
                 throw URLError(.badServerResponse)
             }
 
-            if httpResponse.statusCode == 401 {
-                print("🚨 Access Token expired, trying to refresh...")
-                
-                if let refreshToken = UserDefaults.standard.string(forKey: "refresh_token") {
-                    do {
-                        let refreshResponse: AuthResponse = try await self.request(
-                            path: "/auth/refresh",
-                            method: "POST",
-                            body: ["refreshToken": refreshToken]
-                        )
-                        
-                        UserDefaults.standard.set(refreshResponse.accessToken, forKey: "user_token")
-                        
-                        return try await self.request(path: path, method: method, body: body)
-                        
-                    } catch {
-                        print("❌ Refresh Token ก็หมดอายุเหมือนกัน หรือพัง")
-                        performLogout()
-                        throw error
-                    }
-                } else {
-                    performLogout()
-                }
+        if httpResponse.statusCode == 401 {
+            if path == "/auth/refresh" {
+                print("Refresh Token expired. Force Logging out...")
+                await performLogout()
+                throw URLError(.userAuthenticationRequired)
             }
-        
+
+            print("Access Token expired, trying to refresh...")
+            
+            if let refreshToken = UserDefaults.standard.string(forKey: "refresh_token") {
+                do {
+                    let refreshResponse: AuthResponse = try await self.request(
+                        path: "/auth/refresh",
+                        method: "POST",
+                        body: ["refreshToken": refreshToken]
+                    )
+                    
+                    UserDefaults.standard.set(refreshResponse.accessToken, forKey: "user_token")
+                    
+                    return try await self.request(path: path, method: method, body: body)
+                    
+                } catch {
+                    print("Refresh process failed: \(error)")
+                    await performLogout()
+                    throw error
+                }
+            } else {
+                await performLogout()
+                throw URLError(.userAuthenticationRequired)
+            }
+        }
         
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {

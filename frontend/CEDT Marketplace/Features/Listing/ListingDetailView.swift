@@ -131,7 +131,8 @@ struct ListingDetailView: View {
         VStack(spacing: 15) {
             HStack(spacing: 12) {
                 AsyncImage(url: URL(string: listing.seller?.avatarUrl ?? "")) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
+                    image.resizable()
+                        .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Image(systemName: "person.circle.fill")
                         .resizable()
