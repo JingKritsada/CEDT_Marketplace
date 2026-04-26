@@ -40,6 +40,26 @@ class CreateListingViewModel: ObservableObject {
 
         isPublishing = true
         let priceValue = Double(price) ?? 0.0
+            
+        var uploadedURLs: [String] = []
+
+        if imagesData.isEmpty {
+            self.alertMessage = "กรุณาเลือกรูปภาพอย่างน้อย 1 รูป"
+            self.showAlert = true
+            isPublishing = false
+            return false
+        }
+
+        for data in imagesData {
+            if let url = await ImageUploadService.shared.upload(imageData: data) {
+                uploadedURLs.append(url)
+            } else {
+                self.alertMessage = "อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่"
+                self.showAlert = true
+                isPublishing = false
+                return false
+            }
+        }
 
         let requestBody = CreateListingRequest(
             title: title,
@@ -49,7 +69,7 @@ class CreateListingViewModel: ObservableObject {
             pickupLocationId: pickupLocationId,
             courseCode: courseCode,
             isFree: priceValue == 0,
-            images: ["https://example.com/item.jpg"]
+            images: uploadedURLs
         )
         
         do {
@@ -57,7 +77,7 @@ class CreateListingViewModel: ObservableObject {
             isPublishing = false
             return true
         } catch {
-            self.alertMessage = error.localizedDescription
+            self.alertMessage = "ลงขายไม่สำเร็จ: \(error.localizedDescription)"
             self.showAlert = true
             isPublishing = false
             return false

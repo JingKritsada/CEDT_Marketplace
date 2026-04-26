@@ -28,7 +28,6 @@ struct HomeView: View {
                                 let category = viewModel.categories.first(where: { $0.id == listing.categoryId })
                                 let name = category?.name ?? "General"
                                 
-                                // NavigationLink จะส่งค่า "listing" ออกไป
                                 NavigationLink(value: listing) {
                                     ListingCard(listing: listing, categoryName: name)
                                 }

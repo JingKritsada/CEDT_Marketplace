@@ -127,7 +127,7 @@ struct CreateListingView: View {
                                     .padding(.leading, 12)
                             }
                             TextEditor(text: $description)
-                                .frame(height: 120)
+                                .frame(height: 80)
                                 .scrollContentBackground(.hidden)
                                 .background(Color(.systemGray6).opacity(0.5))
                                 .cornerRadius(12)
@@ -184,6 +184,9 @@ struct CreateListingView: View {
                                     courseCode: courseCode
                                 )
                                 if success {
+                                    withAnimation(.spring()) {
+                                        selectedTab = .home
+                                    }
                                     dismiss()
                                 }
                             }
@@ -201,6 +204,14 @@ struct CreateListingView: View {
                         .cornerRadius(15)
                         .disabled(viewModel.isPublishing) // กันกดซ้ำ
                     }
+                    HStack {
+                        Spacer()
+                        Text("By posting, you agree to the CEDT Community Marketplace Terms of Service and Honor Code.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .frame(width: 250)
+                        Spacer()
+                    }
                     .alert("แจ้งเตือน", isPresented: $viewModel.showAlert) {
                         Button("ตกลง", role: .cancel) { }
                     } message: {
@@ -211,7 +222,7 @@ struct CreateListingView: View {
                 .padding(20)
             }
         }
-        .padding(.bottom, 80)
+        .padding(.bottom, 100)
         .task { await viewModel.fetchFormData() } // ดึงข้อมูล Category จริงจาก DB
     }
     

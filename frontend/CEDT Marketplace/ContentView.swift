@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab: Tab = .home
     @StateObject private var navManager = NavigationManager()
+    @State private var isAuthenticated = UserDefaults.standard.string(forKey: "user_token") != nil
     
     init() {
         UITabBar.appearance().isHidden = true
@@ -21,7 +22,13 @@ struct ContentView: View {
                 case .alerts:
                     Text("Alerts View") 
                 case .profile:
-                    Text("Profile View")
+                    Button("Logout (Test)") {
+                        UserDefaults.standard.removeObject(forKey: "user_token")
+                        withAnimation {
+                            isAuthenticated = false
+                        }
+                    }
+                    .foregroundColor(.red)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -29,6 +36,16 @@ struct ContentView: View {
             if !navManager.isTabBarHidden {
                 CustomTabBar(selectedTab: $selectedTab)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserUnauthorized"))) { _ in
+            withAnimation {
+                self.isAuthenticated = false // เปลี่ยนสถานะปุ๊บ หน้า Login จะโผล่ปั๊บ
+            }
+        }
+        .fullScreenCover(isPresented: .init(get: { !isAuthenticated }, set: { _ in })) {
+            AuthContainerView {
+                withAnimation { isAuthenticated = true }
             }
         }
         .environmentObject(navManager)

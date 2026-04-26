@@ -17,23 +17,32 @@ struct ListingDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 25) {
+                VStack(alignment: .center, spacing: 25) {
                     ZStack(alignment: .topTrailing) {
-                        AsyncImage(url: URL(string: listing.images.first ?? "")) { image in
-                            image.resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Rectangle().foregroundColor(.gray.opacity(0.1))
+                        TabView {
+                            ForEach(listing.images, id: \.self) { imageUrl in
+                                AsyncImage(url: URL(string: imageUrl)) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 370, height: 300)
+                                        .clipped()
+                                } placeholder: {
+                                    Rectangle()
+                                        .foregroundColor(.gray.opacity(0.1))
+                                        .frame(width: 370, height: 300)
+                                }
+                            }
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 400)
-                        .clipped()
+                        .frame(width: 370, height: 300)
+                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+                        .cornerRadius(20)
                         
                         Text("AUTHENTIC")
                             .font(.system(size: 12, weight: .bold))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.pink.opacity(0.2))
+                            .background(Color.white.opacity(0.8))
                             .foregroundColor(.pink)
                             .clipShape(Capsule())
                             .padding(20)
@@ -71,13 +80,15 @@ struct ListingDetailView: View {
                     .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 80)
+                .padding(.top, 130)
+                
             }
             HStack(spacing: 15) {
                 Button(action: {}) {
                     Text("Add to Cart")
                         .font(.headline)
                         .foregroundColor(.primary)
-                        .frame(width: 180)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(Color(.systemGray6))
                         .cornerRadius(15)
@@ -87,18 +98,19 @@ struct ListingDetailView: View {
                     Text("Purchase Instantly")
                         .font(.headline)
                         .foregroundColor(.white)
-                        .frame(width: 180)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(Color.pink)
                         .cornerRadius(15)
                 }
             }
+            .padding(.horizontal, 20)
             .padding(.top, 12)
-            .padding(.bottom, -10)
+            .padding(.bottom, 20)
             .background(Color.white)
             .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: -5)
             .task {
-                await userViewModel.fetchMe() // ดึงข้อมูล displayName (studentID)
+                await userViewModel.fetchMe()
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -116,35 +128,41 @@ struct ListingDetailView: View {
     }
     
     var sellerCard: some View {
-            VStack(spacing: 15) {
-                HStack(spacing: 12) {
-                    AsyncImage(url: URL(string: userViewModel.currentUser?.avatarUrl ?? "")) { image in
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Image(systemName: "person.circle.fill").resizable()
-                    }
-                    .frame(width: 50, height: 50).clipShape(Circle()).foregroundColor(.gray)
-                    
-                    VStack(alignment: .leading) {
-                        Text("LISTED BY").font(.caption2).foregroundColor(.secondary)
-                        // แสดงผลรูปแบบ displayName (studentID)
-                        if let user = userViewModel.currentUser {
-                            Text("\(user.displayName) (\(user.studentId))").font(.subheadline).bold()
-                        } else {
-                            Text("Loading...").font(.subheadline).foregroundColor(.secondary)
-                        }
-                    }
-                    Spacer()
+        VStack(spacing: 15) {
+            HStack(spacing: 12) {
+                AsyncImage(url: URL(string: listing.seller?.avatarUrl ?? "")) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .foregroundColor(.gray)
                 }
+                .frame(width: 50, height: 50)
+                .clipShape(Circle())
                 
-                HStack(spacing: 10) {
-                    socialButton(title: "LINE", icon: "message.fill", color: .green)
-                    socialButton(title: "FACEBOOK", icon: "f.circle.fill", color: .blue)
-                    socialButton(title: "INSTAGRAM", icon: "camera.fill", color: .purple)
+                VStack(alignment: .leading) {
+                    Text("LISTED BY").font(.caption2).foregroundColor(.secondary)
+                    
+                    if let seller = listing.seller {
+                        Text("\(seller.displayName)").font(.subheadline).bold()
+                        
+                    } else {
+                        Text("Unknown Seller").font(.subheadline).foregroundColor(.secondary)
+                    }
                 }
+                Spacer()
             }
-            .padding().background(Color(.systemGray6).opacity(0.5)).cornerRadius(20)
+            
+            HStack(spacing: 10) {
+                socialButton(title: "LINE", icon: "message.fill", color: .green)
+                socialButton(title: "FACEBOOK", icon: "f.circle.fill", color: .blue)
+                socialButton(title: "INSTAGRAM", icon: "camera.fill", color: .purple)
+            }
         }
+        .padding()
+        .background(Color(.systemGray6).opacity(0.5))
+        .cornerRadius(20)
+    }
     
     // --- Helper Views ---
     

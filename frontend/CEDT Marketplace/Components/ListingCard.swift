@@ -16,7 +16,7 @@ struct ListingCard: View {
             ZStack(alignment: .topLeading) {
                 AsyncImage(url: URL(string: listing.images.first ?? "")) { $0.resizable().aspectRatio(contentMode: .fill) }
                 placeholder: { Color.gray.opacity(0.1) }
-                .frame(height: 140)
+                .frame(width : 175, height: 140)
                 .cornerRadius(15)
                 .clipped()
                 
