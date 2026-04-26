@@ -4,21 +4,18 @@ struct ContentView: View {
     @State private var selectedTab: Tab = .home
     @StateObject private var navManager = NavigationManager()
     
-    // ซ่อน Tab Bar มาตรฐานของระบบ
     init() {
         UITabBar.appearance().isHidden = true
     }
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            // ส่วนแสดงเนื้อหาตาม Tab ที่เลือก
             Group {
                 switch selectedTab {
                 case .home:
                     HomeView()
-
                 case .post:
-                    CreateListingView()
+                    CreateListingView(selectedTab: $selectedTab)
                 case .cart:
                     Text("Cart View")
                 case .alerts:

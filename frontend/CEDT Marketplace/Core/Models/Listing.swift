@@ -41,3 +41,5 @@ struct CreateListingRequest: Encodable {
     let isFree: Bool
     let images: [String]
 }
+
+

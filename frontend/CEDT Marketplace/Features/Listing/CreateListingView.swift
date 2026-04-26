@@ -16,8 +16,12 @@ struct CreateListingView: View {
     @State private var title = ""
     @State private var price = ""
     @State private var description = ""
+    @State private var courseCode = ""
     @State private var selectedCategoryId = ""
     @State private var isSpotlight = false
+    @State private var selectedLocationId = ""
+    
+    @Binding var selectedTab: Tab
     
     var body: some View {
         VStack(spacing: 0) {
@@ -82,6 +86,35 @@ struct CreateListingView: View {
                         categorySelector
                     }
                     
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("PICKUP LOCATION").sectionTitle()
+                        
+                        Menu {
+                            Picker("Select Location", selection: $selectedLocationId) {
+                                Text("Select a spot...").tag("")
+                                ForEach(viewModel.pickupLocations) { loc in
+                                    Text("\(loc.building) - \(loc.name)").tag(loc.id)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                let selectedLoc = viewModel.pickupLocations.first(where: { $0.id == selectedLocationId })
+                                Text(selectedLoc != nil ? "\(selectedLoc!.building) (\(selectedLoc!.name))" : "Where to meet?")
+                                    .foregroundColor(selectedLocationId.isEmpty ? .secondary : .primary)
+                                Spacer()
+                                Image(systemName: "chevron.down").font(.caption).foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(Color(.systemGray6).opacity(0.5))
+                            .cornerRadius(12)
+                        }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("COURSE CODE (OPTIONAL)").sectionTitle()
+                        customTextField(placeholder: "e.g. 2110316", text: $courseCode).keyboardType(.numberPad)
+                    }
+                    
                     // 5. Description
                     VStack(alignment: .leading, spacing: 8) {
                         Text("DESCRIPTION").sectionTitle()
@@ -115,48 +148,63 @@ struct CreateListingView: View {
                     }
                     
                     // 7. Spotlight Toggle Box
-                    HStack(spacing: 15) {
-                        Image(systemName: "sparkles")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                            .padding(10)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(10)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Spotlight Listing").font(.subheadline).bold()
-                            Text("Push your item to the top of the feed.").font(.caption2).foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Toggle("", isOn: $isSpotlight)
-                            .labelsHidden()
-                            .tint(.pink)
-                    }
-                    .padding()
-                    .background(Color.blue.opacity(0.05))
-                    .cornerRadius(15)
+//                    HStack(spacing: 15) {
+//                        Image(systemName: "sparkles")
+//                            .font(.title2)
+//                            .foregroundColor(.blue)
+//                            .padding(10)
+//                            .background(Color.blue.opacity(0.1))
+//                            .cornerRadius(10)
+//                        
+//                        VStack(alignment: .leading, spacing: 2) {
+//                            Text("Spotlight Listing").font(.subheadline).bold()
+//                            Text("Push your item to the top of the feed.").font(.caption2).foregroundColor(.secondary)
+//                        }
+//                        
+//                        Spacer()
+//                        
+//                        Toggle("", isOn: $isSpotlight)
+//                            .labelsHidden()
+//                            .tint(.pink)
+//                    }
+//                    .padding()
+//                    .background(Color.blue.opacity(0.05))
+//                    .cornerRadius(15)
                     
                     // 8. Post Button & Legal Text
                     VStack(spacing: 15) {
                         Button(action: {
-                            // Logic สำหรับ Publish เข้า DB
+                            Task {
+                                let success = await viewModel.publishListing(
+                                    title: title,
+                                    description: description,
+                                    price: price,
+                                    categoryId: selectedCategoryId,
+                                    pickupLocationId: selectedLocationId,
+                                    courseCode: courseCode
+                                )
+                                if success {
+                                    dismiss()
+                                }
+                            }
                         }) {
-                            Text("Post Item")
-                                .font(.headline).bold()
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.pink)
-                                .cornerRadius(15)
+                            if viewModel.isPublishing {
+                                ProgressView().tint(.white) // แสดง Loading ตอนกำลังส่ง
+                            } else {
+                                Text("Post Item").font(.headline).bold()
+                            }
                         }
-                        
-                        Text("By posting, you agree to the CEDT Community Marketplace Terms of Service and Honor Code.")
-                            .font(.system(size: 10))
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 20)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.pink)
+                        .foregroundColor(.white)
+                        .cornerRadius(15)
+                        .disabled(viewModel.isPublishing) // กันกดซ้ำ
+                    }
+                    .alert("แจ้งเตือน", isPresented: $viewModel.showAlert) {
+                        Button("ตกลง", role: .cancel) { }
+                    } message: {
+                        Text(viewModel.alertMessage)
                     }
                     .padding(.top, 10)
                 }
@@ -171,20 +219,22 @@ struct CreateListingView: View {
     
     var headerView: some View {
         HStack {
-            Button(action: { dismiss() }) {
+            Button(action: {
+                withAnimation(.spring()) {
+                    selectedTab = .home
+                }
+            }) {
                 Image(systemName: "xmark")
                     .font(.title3)
                     .foregroundColor(.pink)
             }
             Spacer()
-            Text("Post New Item")
-                .font(.headline).bold()
+            Text("Post New Item").font(.headline).bold()
             Spacer()
-            // เพื่อให้ชื่ออยู่ตรงกลางพอดี
             Image(systemName: "xmark").opacity(0)
+            }
+            .padding()
         }
-        .padding()
-    }
     
     var addPhotoButton: some View {
         VStack(spacing: 8) {

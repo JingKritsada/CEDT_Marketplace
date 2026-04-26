@@ -15,10 +15,9 @@ class CreateListingViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var pickupLocations: [PickupLocation] = []
     @Published var isPublishing = false
-    @Published var showingAlert = false
     @Published var alertMessage = ""
+    @Published var showAlert = false
     
-    // ดึงตัวเลือกจาก DB มาให้ผู้ใช้เลือกในฟอร์ม
     func fetchFormData() async {
         do {
             async let cats: [Category] = APIClient.shared.request(path: "/categories")
@@ -31,29 +30,35 @@ class CreateListingViewModel: ObservableObject {
         }
     }
     
-    func publishListing(title: String, description: String, price: Double, categoryId: String, pickupLocationId: String, courseCode: String?) async -> Bool {
-        isPublishing = true
+    func publishListing(title: String, description: String, price: String, categoryId: String, pickupLocationId: String, courseCode: String) async -> Bool {
         
-        // สร้าง Request Object แทนการใช้ [String: Any]
+        guard !pickupLocationId.isEmpty else {
+            self.alertMessage = "กรุณาเลือกสถานที่นัดรับ"
+            self.showAlert = true
+            return false
+        }
+
+        isPublishing = true
+        let priceValue = Double(price) ?? 0.0
+
         let requestBody = CreateListingRequest(
             title: title,
             description: description,
-            price: price,
+            price: priceValue,
             categoryId: categoryId,
             pickupLocationId: pickupLocationId,
-            courseCode: courseCode ?? "",
-            isFree: price == 0,
-            images: ["https://pub-8be35987158348928c039755b4125f46.r2.dev/items/default-item.png"]
+            courseCode: courseCode,
+            isFree: priceValue == 0,
+            images: ["https://example.com/item.jpg"]
         )
         
         do {
-            // ส่ง requestBody เข้าไป ตัวแดงจะหายไปทันทีครับ
             let _: Listing = try await APIClient.shared.request(path: "/listings", method: "POST", body: requestBody)
             isPublishing = false
             return true
         } catch {
-            self.alertMessage = "ลงขายไม่สำเร็จ: \(error.localizedDescription)"
-            self.showingAlert = true
+            self.alertMessage = error.localizedDescription
+            self.showAlert = true
             isPublishing = false
             return false
         }
