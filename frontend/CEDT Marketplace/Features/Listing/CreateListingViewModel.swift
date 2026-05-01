@@ -103,4 +103,14 @@ class CreateListingViewModel: ObservableObject {
         selectedItems.remove(at: index)
     }
     
+    func fetchListingDetail(id: String) async -> Listing? {
+        do {
+            let detailedListing: Listing = try await APIClient.shared.request(path: "/listings/\(id)")
+            return detailedListing
+        } catch {
+            print("Fetch Detail Error: \(error)")
+            return nil
+        }
+    }
+    
 }

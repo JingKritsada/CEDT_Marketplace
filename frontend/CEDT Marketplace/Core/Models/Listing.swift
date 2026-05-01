@@ -32,6 +32,7 @@ struct Listing: Codable, Identifiable, Hashable {
     
     let seller: Seller?
     let category: Category?
+    let pickupLocation: PickupLocation?
 }
 
 struct CreateListingRequest: Encodable {

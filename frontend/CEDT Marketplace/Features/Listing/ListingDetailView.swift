@@ -1,14 +1,17 @@
-//
-//  ListingDetailView.swift
-//  CEDT MarketPlace
-//
-//  Created by Phachara Charoenkitkul on 18/4/2569 BE.
-//
-
 import SwiftUI
 
 struct ListingDetailView: View {
-    let listing: Listing
+    // 1. รับข้อมูลเบื้องต้นมาจากหน้าก่อนหน้า
+    let initialListing: Listing
+    
+    // 2. ตัวแปรสำหรับเก็บข้อมูลชุดเต็มหลังจากโหลดจาก /listings/:id
+    @State private var detailedListing: Listing?
+    
+    // 3. Computed Property เพื่อเลือกใช้ข้อมูลที่ "ใหม่ที่สุด" ที่มีอยู่
+    private var displayListing: Listing {
+        detailedListing ?? initialListing
+    }
+
     @EnvironmentObject var navManager: NavigationManager
     @StateObject private var userViewModel = UserViewModel()
     @ObservedObject var viewModel: ListingViewModel
@@ -18,9 +21,10 @@ struct ListingDetailView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .center, spacing: 25) {
+                    // --- Image Section ---
                     ZStack(alignment: .topTrailing) {
                         TabView {
-                            ForEach(listing.images, id: \.self) { imageUrl in
+                            ForEach(displayListing.images, id: \.self) { imageUrl in
                                 AsyncImage(url: URL(string: imageUrl)) { image in
                                     image
                                         .resizable()
@@ -49,40 +53,47 @@ struct ListingDetailView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 20) {
+                        // --- Title & Price ---
                         HStack(alignment: .top) {
-                            Text(listing.title)
+                            Text(displayListing.title)
                                 .font(.system(size: 24, weight: .bold))
                                 .fixedSize(horizontal: false, vertical: true)
                             Spacer()
-                            Text(listing.isFree ? "FREE" : "฿\(Int(listing.price))")
+                            Text(displayListing.isFree ? "FREE" : "฿\(Int(displayListing.price))")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.pink)
                         }
 
+                        // --- Seller Card (รูปจะขึ้นที่นี่เมื่อโหลดเสร็จ) ---
                         sellerCard
 
+                        // --- Description ---
                         VStack(alignment: .leading, spacing: 10) {
                             Text("DESCRIPTION")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.secondary)
-                            Text(listing.description)
+                            Text(displayListing.description)
                                 .font(.body)
                                 .foregroundColor(.primary.opacity(0.8))
                                 .lineSpacing(4)
                         }
 
-                        if let locId = listing.pickupLocationId {
-                            let locationName = viewModel.pickupLocations.first(where: { $0.id == locId })?.name ?? "Faculty of Engineering"
-                            let BuildingName = viewModel.pickupLocations.first(where: { $0.id == locId })?.building ?? "Faculty of Engineering"
-                            infoBox(title: "PICKUP", value: locationName + "(" + BuildingName + ")", icon: "mappin.and.ellipse")
+                        // --- Pickup Location (ดึงจากก้อนข้อมูลที่ Backend ส่งมาให้โดยตรง) ---
+                        if let location = displayListing.pickupLocation {
+                            infoBox(
+                                title: "PICKUP",
+                                value: "\(location.name) (\(location.building))",
+                                icon: "mappin.and.ellipse"
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 80)
                 .padding(.top, 130)
-                
             }
+            
+            // --- Action Buttons ---
             HStack(spacing: 15) {
                 Button(action: {}) {
                     Text("Add to Cart")
@@ -109,28 +120,36 @@ struct ListingDetailView: View {
             .padding(.bottom, 20)
             .background(Color.white)
             .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: -5)
-            .task {
-                await userViewModel.fetchMe()
-            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .ignoresSafeArea(edges: .top)
+        .task {
+            // 🚀 จังหวะนี้จะไปโหลดข้อมูลชุดเต็มเพื่อให้ได้รูป Seller และ Pickup Location ครับ
+            if let fetchedListing = await viewModel.fetchListingDetail(id: initialListing.id) {
+                withAnimation {
+                    self.detailedListing = fetchedListing
+                }
+            }
+            await userViewModel.fetchMe()
+        }
         .onAppear {
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        navManager.isTabBarHidden = true
-                    }
-                }
-                .onDisappear {
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        navManager.isTabBarHidden = false
-                    }
-                }
+            withAnimation(.easeInOut(duration: 0.1)) {
+                navManager.isTabBarHidden = true
+            }
+        }
+        .onDisappear {
+            withAnimation(.easeInOut(duration: 0.1)) {
+                navManager.isTabBarHidden = false
+            }
+        }
     }
     
+    // --- Seller Card Component ---
     var sellerCard: some View {
         VStack(spacing: 15) {
             HStack(spacing: 12) {
-                AsyncImage(url: URL(string: listing.seller?.avatarUrl ?? "")) { image in
+                // 📸 จะใช้ URL จาก detailedListing ถ้าโหลดเสร็จแล้ว
+                AsyncImage(url: URL(string: displayListing.seller?.avatarUrl ?? "")) { image in
                     image.resizable()
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
@@ -144,9 +163,8 @@ struct ListingDetailView: View {
                 VStack(alignment: .leading) {
                     Text("LISTED BY").font(.caption2).foregroundColor(.secondary)
                     
-                    if let seller = listing.seller {
+                    if let seller = displayListing.seller {
                         Text("\(seller.displayName)").font(.subheadline).bold()
-                        
                     } else {
                         Text("Unknown Seller").font(.subheadline).foregroundColor(.secondary)
                     }
@@ -164,9 +182,8 @@ struct ListingDetailView: View {
         .background(Color(.systemGray6).opacity(0.5))
         .cornerRadius(20)
     }
-    
-    // --- Helper Views ---
-    
+
+    // --- Helper Views (socialButton, infoBox) เหมือนเดิม ---
     func socialButton(title: String, icon: String, color: Color) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon).font(.caption)

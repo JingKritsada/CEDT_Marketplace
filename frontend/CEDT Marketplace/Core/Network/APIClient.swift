@@ -9,7 +9,7 @@ import Foundation
 
 actor APIClient {
     static let shared = APIClient()
-    private let baseURL = "http://localhost:3003"
+    private let baseURL = "http://127.0.0.1:3003"
 
     func request<T: Decodable>(path: String, method: String = "GET", body: Encodable? = nil) async throws -> T {
         guard let url = URL(string: baseURL + path) else { throw URLError(.badURL) }
@@ -34,7 +34,7 @@ actor APIClient {
 
         if httpResponse.statusCode == 401 {
             if path == "/auth/refresh" {
-                print("Refresh Token expired. Force Logging out...")
+                print("Refresh Token itself is invalid.")
                 await performLogout()
                 throw URLError(.userAuthenticationRequired)
             }
@@ -50,6 +50,8 @@ actor APIClient {
                     )
                     
                     UserDefaults.standard.set(refreshResponse.accessToken, forKey: "user_token")
+                    
+                    print("Refresh Success! Retrying original request...")
                     
                     return try await self.request(path: path, method: method, body: body)
                     
@@ -78,10 +80,9 @@ actor APIClient {
         return try decoder.decode(T.self, from: data)
     }
     
-    private func performLogout() {
-            UserDefaults.standard.removeObject(forKey: "user_token")
-            UserDefaults.standard.removeObject(forKey: "refresh_token")
-            
-            NotificationCenter.default.post(name: NSNotification.Name("UserUnauthorized"), object: nil)
-        }
+    private func performLogout() async {
+        UserDefaults.standard.removeObject(forKey: "user_token")
+        UserDefaults.standard.removeObject(forKey: "refresh_token")
+        NotificationCenter.default.post(name: NSNotification.Name("UserUnauthorized"), object: nil)
+    }
 }

@@ -15,7 +15,8 @@ struct LoginRequest: Encodable {
 struct AuthResponse: Decodable {
     let accessToken: String
     let refreshToken: String
-    let user: UserProfile
+    
+    let user: UserProfile?
 }
 
 struct UserProfile: Decodable {

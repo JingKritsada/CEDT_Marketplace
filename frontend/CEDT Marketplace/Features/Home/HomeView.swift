@@ -43,7 +43,7 @@ struct HomeView: View {
                 .navigationBarHidden(true)
                 
                 .navigationDestination(for: Listing.self) { listing in
-                    ListingDetailView(listing: listing, viewModel: viewModel)
+                    ListingDetailView(initialListing: listing, viewModel: viewModel)
                 }
             }
             .task {

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct PickupLocation: Codable, Identifiable {
+struct PickupLocation: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let building: String

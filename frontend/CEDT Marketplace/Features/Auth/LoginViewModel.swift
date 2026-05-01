@@ -29,6 +29,7 @@ class LoginViewModel: ObservableObject {
             self.showAlert = true
             return false
         }
+        let cleanedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
 
         isLoading = true
         
@@ -36,7 +37,7 @@ class LoginViewModel: ObservableObject {
             let response: AuthResponse = try await APIClient.shared.request(
                 path: "/auth/login",
                 method: "POST",
-                body: ["email": email, "password": password]
+                body: ["email": cleanedEmail, "password": password]
             )
 
             UserDefaults.standard.set(response.accessToken, forKey: "user_token")
