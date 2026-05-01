@@ -22,13 +22,7 @@ struct ContentView: View {
                 case .alerts:
                     Text("Alerts View") 
                 case .profile:
-                    Button("Logout (Test)") {
-                        UserDefaults.standard.removeObject(forKey: "user_token")
-                        withAnimation {
-                            isAuthenticated = false
-                        }
-                    }
-                    .foregroundColor(.red)
+                    ProfileView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
