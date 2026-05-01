@@ -42,8 +42,14 @@ const buildFilter = (query: ListingQueryInput): Prisma.ListingWhereInput => {
 
 	if (query.minPrice !== undefined || query.maxPrice !== undefined) {
 		where.price = {
-			gte: (query.minPrice && !isNaN(Number(query.minPrice))) ? Number(query.minPrice) : undefined,
-			lte: (query.maxPrice && !isNaN(Number(query.maxPrice))) ? Number(query.maxPrice) : undefined,
+			gte:
+				query.minPrice && !isNaN(Number(query.minPrice))
+					? Number(query.minPrice)
+					: undefined,
+			lte:
+				query.maxPrice && !isNaN(Number(query.maxPrice))
+					? Number(query.maxPrice)
+					: undefined,
 		};
 	}
 
@@ -59,6 +65,7 @@ const getListingOrThrow = async (id: string) => {
 					id: true,
 					email: true,
 					displayName: true,
+					avatarUrl: true,
 				},
 			},
 			category: true,
