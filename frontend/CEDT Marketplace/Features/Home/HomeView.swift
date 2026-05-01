@@ -11,6 +11,9 @@ import Combine
 struct HomeView: View {
     @StateObject private var viewModel = ListingViewModel()
     @StateObject private var userViewModel = UserViewModel()
+    @State private var searchText = ""
+    @State private var showFilters = false
+    @State private var filterOptions = FilterOptions()
     
     var body: some View {
         NavigationStack {
@@ -41,9 +44,15 @@ struct HomeView: View {
                 }
                 .padding(.bottom, 80)
                 .navigationBarHidden(true)
-                
                 .navigationDestination(for: Listing.self) { listing in
                     ListingDetailView(initialListing: listing, viewModel: viewModel)
+                }
+                .fullScreenCover(isPresented: $showFilters) {
+                    FilterView(options: $filterOptions, categories: viewModel.categories) {
+                        Task {
+                            await viewModel.searchListings(query: searchText, options: filterOptions)
+                        }
+                    }
                 }
             }
             .task {
@@ -87,13 +96,15 @@ struct HomeView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.gray)
-                TextField("Search components...", text: .constant("")) //
+                TextField("Search components...", text: $searchText)
             }
             .padding(12)
             .background(Color(.systemGray6))
             .cornerRadius(12)
             
-            Button(action: {}) {
+            Button(action: {
+                showFilters = true
+            }) {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .font(.title2)
                     .foregroundColor(.primary)
@@ -185,6 +196,22 @@ struct HomeView: View {
                 }
             }
             .padding(.horizontal)
+        }
+    }
+    
+    var filteredListings: [Listing] {
+        viewModel.listings.filter { listing in
+            // 1. กรองตาม Category
+            let matchCategory = filterOptions.selectedCategory == nil || listing.categoryId == filterOptions.selectedCategory
+            
+            // 2. กรองตามประเภท (Free/Sell)
+            let isFreeMatch = (filterOptions.listingType == .free && listing.isFree) ||
+                              (filterOptions.listingType == .sell && !listing.isFree)
+            
+            // 3. กรองตามราคา
+            let matchPrice = listing.price <= filterOptions.maxPrice
+            
+            return matchCategory && isFreeMatch && matchPrice
         }
     }
 }

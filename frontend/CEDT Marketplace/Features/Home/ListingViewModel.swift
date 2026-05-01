@@ -62,13 +62,41 @@ class ListingViewModel: ObservableObject {
     }
     
     func fetchListingDetail(id: String) async -> Listing? {
-            do {
-                let detailedListing: Listing = try await APIClient.shared.request(path: "/listings/\(id)")
-                return detailedListing
-            } catch {
-                print("Fetch Detail Error: \(error)")
-                return nil
-            }
+        do {
+            let detailedListing: Listing = try await APIClient.shared.request(path: "/listings/\(id)")
+            return detailedListing
+        } catch {
+            print("Fetch Detail Error: \(error)")
+            return nil
         }
-    
+    }
+    func searchListings(query: String? = nil, options: FilterOptions) async {
+        self.isLoading = true
+        do {
+            var params: [String: String] = [:]
+            params["status"] = "AVAILABLE"
+            
+            if let query = query, !query.isEmpty { params["search"] = query }
+            if let categoryId = options.selectedCategory { params["categoryId"] = categoryId }
+            
+            if options.listingType == .free {
+                params["isFree"] = "true"
+                params["minPrice"] = "0"
+                params["maxPrice"] = "0"
+            } else {
+                if options.listingType == .sell { params["isFree"] = "false" }
+                params["minPrice"] = String(Int(options.minPrice))
+                params["maxPrice"] = String(Int(options.maxPrice))
+            }
+
+            let results: [Listing] = try await APIClient.shared.request(path: "/listings/search", queryParams: params)
+            
+            DispatchQueue.main.async {
+                self.listings = results
+            }
+        } catch {
+            print("Search API Error: \(error)")
+        }
+        self.isLoading = false
+    }
 }

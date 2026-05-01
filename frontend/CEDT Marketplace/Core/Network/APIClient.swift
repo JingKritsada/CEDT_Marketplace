@@ -11,8 +11,24 @@ actor APIClient {
     static let shared = APIClient()
     private let baseURL = "http://127.0.0.1:3003"
 
-    func request<T: Decodable>(path: String, method: String = "GET", body: Encodable? = nil) async throws -> T {
-        guard let url = URL(string: baseURL + path) else { throw URLError(.badURL) }
+    func request<T: Decodable>(
+        path: String,
+        method: String = "GET",
+        queryParams: [String: String]? = nil,
+        body: Encodable? = nil
+    ) async throws -> T {
+        
+        guard var components = URLComponents(string: baseURL + path) else {
+            throw URLError(.badURL)
+        }
+        
+        if let queryParams = queryParams {
+            components.queryItems = queryParams.map { URLQueryItem(name: $0.key, value: $0.value) }
+        }
+        
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = method
@@ -28,9 +44,9 @@ actor APIClient {
 
         let (data, response) = try await URLSession.shared.data(for: request)
             
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw URLError(.badServerResponse)
-            }
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
 
         if httpResponse.statusCode == 401 {
             if path == "/auth/refresh" {
@@ -50,10 +66,14 @@ actor APIClient {
                     )
                     
                     UserDefaults.standard.set(refreshResponse.accessToken, forKey: "user_token")
-                    
                     print("Refresh Success! Retrying original request...")
                     
-                    return try await self.request(path: path, method: method, body: body)
+                    return try await self.request(
+                        path: path,
+                        method: method,
+                        queryParams: queryParams,
+                        body: body
+                    )
                     
                 } catch {
                     print("Refresh process failed: \(error)")
