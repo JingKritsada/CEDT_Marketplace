@@ -143,11 +143,7 @@ export const authService = {
 		}
 
 		if (existingToken.expiresAt.getTime() < Date.now()) {
-			try {
-				await prisma.refreshToken.delete({
-					where: { token },
-				});
-			} catch {}
+			await prisma.refreshToken.delete({ where: { token } }).catch(() => undefined);
 			throw new ApiError("Refresh token is invalid or expired", 401);
 		}
 
