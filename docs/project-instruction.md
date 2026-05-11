@@ -56,7 +56,9 @@ CEDT Community Marketplace addresses each pain point with purpose-built features
 - Post items for sale or free giveaway
 - Attach photos, description, condition, and price
 - Tag listings with course codes (e.g., 2110101, 2110427) and hardware category
-- Item status lifecycle: **Available → Reserved → Sold**
+- Item status lifecycle (Show for sellers): **Available → Reserved → Sold → Waiting for Pickup → Sent → Rated**
+- Item status lifecycle (Show for buyers): **Available → Waiting for Payment → Paid → Waiting for Pickup → Received (Buyer should click to confirm and rate or review) → Rated**
+- After rating, the listing is archived and no longer visible in the main feed but can be accessed in the user’s profile history. Adn the rating will be shown as average rating in the listing detail page and the seller profile page. The buyer can also write a review for the seller after the transaction is completed, and the review will be shown in the seller profile page.
 
 ### 4.2 Search & Discovery
 
@@ -68,17 +70,32 @@ CEDT Community Marketplace addresses each pain point with purpose-built features
 
 - Coordinate on-campus pickup directly in chat
 - Seller can mark item as Reserved after agreeing with a buyer
-- Seller can add thier social media link such as line, instragram, facebook for contact with buyer
+- Seller can add their social media link such as line, instagram, facebook for contact with buyer
 
 ### 4.4 User Authentication
 
-- Student login via university account (MCV account)
+- Student register with university email and password
+- User should be able to login via other Social SSO (Google, Facebook)
 - Profile page: listings posted, transaction history, ratings
 
 ### 4.5 Pickup Location System
 
 - Predefined on-campus pickup spots (Lang Gear, Engineering buildings, etc.)
 - Seller specifies preferred pickup location when posting a listing
+
+### 4.6 Cart System
+
+- Buyers can add listings to a cart for easier checkout
+- Buyers can view and manage their cart items
+
+### 4.7 Payment Integration
+
+- Integrate with a payment gateway (e.g., Stripe, PayPal) for secure transactions
+
+### 4.8 Alert System
+
+- The application should be able to send notifications when the status of the item changes, such as when a paid item is marked as waiting for pickup.
+- The application should be able to send notifications by in-app alerts
 
 ---
 
@@ -100,31 +117,41 @@ CEDT Community Marketplace addresses each pain point with purpose-built features
 
 ### 5.2 Project Structure
 
+should be in the best practice structure for a Node.js REST API with clear separation of concerns and scalability in mind:
+
 ```text
 /cedt-marketplace-backend
-├── src/
-│   ├── config/          # DB, env, constants
-│   ├── controllers/     # Route handler logic
-│   ├── middlewares/     # Auth, validation, error handler
-│   ├── models/          # Prisma schema / DB models
-│   ├── routes/          # Express routers
-│   ├── services/        # Business logic layer
-│   ├── sockets/         # Socket.io chat handlers
-│   └── utils/           # Helpers, formatters
-├── prisma/
-│   └── schema.prisma    # Database schema
-├── tests/               # Unit & integration tests
-├── .env                 # Environment variables
-└── server.js            # Entry point
+├── package.json
+├── package-lock.json
+├── tsconfig.json
+├── eslint.config.mjs
+├── prisma.config.ts
+├── prisma
+│   ├── migrations
+│   ├── schema.prisma
+│   └── seed.ts
+├── src
+│   ├── app.ts
+│   ├── config
+│   ├── controllers
+│   ├── middlewares
+│   ├── models
+│   ├── routes
+│   ├── server.ts
+│   ├── services
+│   ├── sockets
+│   └── utils
+├── tests
+│   └── app.test.ts
 ```
 
 ### 5.3 Database Schema (Key Models)
 
+The text below outlines only some database tables and their fields, if you think some fields or some tables are missing, please add them in the best practice way. The actual Prisma schema file should be more detailed with relations, indexes, and constraints.
+
 ```text
 User            id, studentId, email, displayName, avatarUrl, createdAt
-Listing         id, sellerId, title, description, price, isFree,
-                status (AVAILABLE | RESERVED | SOLD),
-                categoryId, courseCode, pickupLocationId, images[], createdAt
+Listing         id, sellerId, title, description, price, isFree, status, categoryId, courseCode, pickupLocationId, images[], createdAt
 Category        id, name, slug (e.g., microcontroller, sensor, robotics-kit)
 ChatRoom        id, listingId, buyerId, sellerId, createdAt
 Message         id, chatRoomId, senderId, content, createdAt
@@ -132,6 +159,8 @@ PickupLocation  id, name, building, description
 ```
 
 ### 5.4 API Endpoints
+
+the table below outlines only some REST API endpoints for the backend, such as authentication, listing management, search, and user profile. Each endpoint specifies the HTTP method, path, description, and whether authentication is required. Please think some and please add the missing ones in the best practice way. or you can seperate the endpoints into different tables based on their functionality for make it more clear and maintainable.
 
 | Method + Path           | Description                     | Auth Required |
 | ----------------------- | ------------------------------- | ------------- |
@@ -147,19 +176,9 @@ PickupLocation  id, name, building, description
 | `GET /users/me`         | Get current user profile        | Yes           |
 | `GET /pickup-locations` | List pickup spots               | No            |
 
-### 5.5 WebSocket Events (Chat via Socket.io)
-
-| Event                | Direction       | Description                            |
-| -------------------- | --------------- | -------------------------------------- |
-| `join_room`          | Client → Server | Join a chat room                       |
-| `send_message`       | Client → Server | Send a message                         |
-| `receive_message`    | Server → Client | Broadcast message to room              |
-| `typing`             | Client → Server | Typing indicator                       |
-| `item_status_update` | Server → Client | Notify when seller updates item status |
-
 ### 5.6 Authentication Flow
 
-1. Student submits university email + password (or OAuth via CU SSO)
+1. Student submits university email + password or via Social SSO (Google, Facebook)
 2. Server validates credentials, issues short-lived **Access Token** (15 min) + **Refresh Token** (7 days)
 3. iOS app stores tokens securely in **Keychain**
 4. All protected endpoints validate `Bearer <token>` in the `Authorization` header
@@ -168,123 +187,18 @@ PickupLocation  id, name, building, description
 ### 5.7 Environment Variables (`.env`)
 
 ```env
-DATABASE_URL=postgresql://user:pass@localhost:5432/cedt_marketplace
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=<strong_random_secret>
-JWT_REFRESH_SECRET=<another_secret>
-STORAGE_BUCKET=<s3-or-cloudinary-config>
-PORT=3000
+# Application Environment
 NODE_ENV=development
-```
+PORT=3003
+CORS_ORIGIN=http://localhost:3000
 
----
+# Database Configuration (Used by Prisma)
+DATABASE_URL="postgresql://username:password@localhost:5432/cedt_marketplace?schema=public"
 
-## 6. Frontend — SwiftUI (iOS)
-
-### 6.1 Tech Stack
-
-| Layer            | Technology                               |
-| ---------------- | ---------------------------------------- |
-| Language         | Swift 5.9+                               |
-| UI Framework     | SwiftUI                                  |
-| Architecture     | MVVM (Model-View-ViewModel)              |
-| Networking       | URLSession + async/await (or Alamofire)  |
-| Real-time Chat   | URLSessionWebSocketTask / Starscream     |
-| Image Loading    | SDWebImageSwiftUI or AsyncImage          |
-| Secure Storage   | Keychain (for tokens)                    |
-| State Management | Combine + @StateObject / @ObservedObject |
-| Min iOS Version  | iOS 16+                                  |
-
-### 6.2 Project Structure
-
-```text
-/CEDTMarketplace.xcodeproj
-├── App/
-│   ├── CEDTMarketplaceApp.swift    # @main entry point
-│   └── ContentView.swift           # Root navigation
-├── Features/
-│   ├── Auth/                       # Login, register views + VM
-│   ├── Home/                       # Feed, search, category browse
-│   ├── Listing/                    # Detail, create, edit listing
-│   ├── Chat/                       # Chat room list + message view
-│   └── Profile/                    # User profile + my listings
-├── Core/
-│   ├── Network/                    # APIClient, endpoints, WebSocket
-│   ├── Models/                     # Codable data models
-│   ├── Services/                   # AuthService, ListingService, etc.
-│   └── Storage/                    # Keychain wrapper
-├── Components/                     # Reusable SwiftUI views
-└── Resources/                      # Assets, fonts, colors
-```
-
-### 6.3 Screen Map
-
-| Screen                 | Key Components                                  | Navigation          |
-| ---------------------- | ----------------------------------------------- | ------------------- |
-| `LoginView`            | Email field, login button, CU SSO               | → HomeView          |
-| `HomeView` (Tab 1)     | ListingGrid, SearchBar, CategoryFilter          | → ListingDetailView |
-| `ListingDetailView`    | ImageCarousel, StatusBadge, ChatButton          | → ChatRoomView      |
-| `CreateListingView`    | Form, ImagePicker, CoursePicker, CategoryPicker | Modal sheet         |
-| `ChatListView` (Tab 2) | ChatRoomRow with last message preview           | → ChatRoomView      |
-| `ChatRoomView`         | MessageBubbles, InputBar, WebSocket stream      | Push                |
-| `ProfileView` (Tab 3)  | My Listings, sold history, settings             | → MyListingView     |
-| `SearchView`           | SearchBar, FilterSheet, ResultsList             | Push                |
-
-### 6.4 MVVM Pattern Example — Listings
-
-```swift
-// ListingViewModel.swift
-@MainActor
-class ListingViewModel: ObservableObject {
-    @Published var listings: [Listing] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-
-    private let service: ListingService
-
-    func fetchListings(category: String? = nil, course: String? = nil) async {
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            listings = try await service.getListings(category: category, course: course)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-}
-```
-
-### 6.5 Key SwiftUI Components
-
-- **ListingCard** — image thumbnail, title, price/free tag, status badge, course tag
-- **CategoryFilterBar** — horizontal scrollable category chips
-- **StatusBadge** — coloured pill (green = Available, yellow = Reserved, grey = Sold)
-- **MessageBubble** — sender/receiver differentiated bubbles with timestamp
-- **ImageCarousel** — TabView-based multi-image viewer for listing photos
-- **CoursePicker** — searchable list of CEDT course codes
-
-### 6.6 Networking Layer
-
-```swift
-// APIClient.swift
-struct APIClient {
-    static let baseURL = URL(string: "https://api.cedt-marketplace.app")!
-
-    func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
-        var req = URLRequest(url: Self.baseURL.appendingPathComponent(endpoint.path))
-        req.httpMethod = endpoint.method.rawValue
-        req.setValue("Bearer \(TokenStore.accessToken)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let body = endpoint.body {
-            req.httpBody = try JSONEncoder().encode(body)
-        }
-        let (data, response) = try await URLSession.shared.data(for: req)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-            throw APIError.serverError
-        }
-        return try JSONDecoder().decode(T.self, from: data)
-    }
-}
+# Security & Authentication
+BCRYPT_SALT_ROUNDS=12
+JWT_SECRET="example"
+JWT_REFRESH_SECRET="example"
 ```
 
 ---
@@ -310,51 +224,11 @@ docs: update API endpoint table in README
 refactor: extract ChatService from ChatViewModel
 ```
 
-### 7.3 Milestone Commits
-
-Commit checkpoints aligned with coursework presentation schedule:
-
-| Milestone   | Deliverable                                   |
-| ----------- | --------------------------------------------- |
-| Milestone 1 | Project setup, auth endpoints, login screen   |
-| Milestone 2 | Listing CRUD API + Home/Listing UI            |
-| Milestone 3 | Real-time chat (WebSocket backend + iOS)      |
-| Milestone 4 | Search & filter, status management            |
-| Final       | Full integration, bug fixes, demo-ready build |
-
 ---
 
-## 8. Development Setup
+## 8. Non-Functional Requirements
 
-### 8.1 Backend
-
-```bash
-# 1. Clone and install
-git clone <repo-url> && cd backend
-npm install
-
-# 2. Configure environment
-cp .env.example .env
-# Fill in DATABASE_URL, JWT_SECRET, etc.
-
-# 3. Run migrations and seed
-npx prisma migrate dev
-npm run seed
-
-# 4. Start dev server
-npm run dev   # uses nodemon
-```
-
-### 8.2 Frontend (iOS)
-
-1. Open `CEDTMarketplace.xcodeproj` in **Xcode 15+**
-2. Resolve Swift packages: **File → Packages → Resolve Packages**
-3. Set `BASE_URL` in `Config.swift` to your local backend (`http://localhost:3000`)
-4. Select a simulator (iPhone 15, iOS 16+) and run with **Cmd + R**
-
----
-
-## 9. Non-Functional Requirements
+The table below summarises the key non-functional requirements for the CEDT Community Marketplace, covering security, performance, scalability, reliability, usability, and privacy aspects. If you think some requirements are missing, please add them in the best practice way.
 
 | Requirement | Specification                                                       |
 | ----------- | ------------------------------------------------------------------- |
