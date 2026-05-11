@@ -28,7 +28,13 @@ const ensureAllowedEmail = (email: string): void => {
 		return;
 	}
 
-	const emailDomain = email.toLowerCase().split("@").pop();
+	const atIndex = email.lastIndexOf("@");
+
+	if (atIndex <= 0 || atIndex === email.length - 1) {
+		throw new ApiError("Email domain is not allowed", 400);
+	}
+
+	const emailDomain = email.slice(atIndex + 1).toLowerCase();
 
 	if (!emailDomain || !allowedEmailDomains.has(emailDomain)) {
 		throw new ApiError("Email domain is not allowed", 400);
@@ -137,9 +143,11 @@ export const authService = {
 		}
 
 		if (existingToken.expiresAt.getTime() < Date.now()) {
-			await prisma.refreshToken.delete({
-				where: { token },
-			});
+			try {
+				await prisma.refreshToken.delete({
+					where: { token },
+				});
+			} catch {}
 			throw new ApiError("Refresh token is invalid or expired", 401);
 		}
 
