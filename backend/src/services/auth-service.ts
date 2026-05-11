@@ -131,12 +131,14 @@ export const authService = {
 			where: { token },
 		});
 
-		if (!existingToken || existingToken.expiresAt.getTime() < Date.now()) {
-			if (existingToken) {
-				await prisma.refreshToken.delete({
-					where: { token },
-				});
-			}
+		if (!existingToken) {
+			throw new ApiError("Refresh token is invalid or expired", 401);
+		}
+
+		if (existingToken.expiresAt.getTime() < Date.now()) {
+			await prisma.refreshToken.delete({
+				where: { token },
+			});
 			throw new ApiError("Refresh token is invalid or expired", 401);
 		}
 

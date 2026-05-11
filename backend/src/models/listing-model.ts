@@ -123,13 +123,13 @@ const listingQueryBaseSchema = z.object({
 	courseCode: z.string().trim().optional(),
 	minPrice: z.coerce.number().int().min(0).optional(),
 	maxPrice: z.coerce.number().int().min(0).optional(),
-	search: z.string().trim().min(1).optional(),
 });
 
-const validatePriceRange = (
-	data: z.infer<typeof listingQueryBaseSchema>,
-	ctx: z.RefinementCtx
-): void => {
+type ListingQueryRangeInput = z.infer<typeof listingQueryBaseSchema> & {
+	search?: string;
+};
+
+const validatePriceRange = (data: ListingQueryRangeInput, ctx: z.RefinementCtx): void => {
 	if (
 		data.minPrice !== undefined &&
 		data.maxPrice !== undefined &&
@@ -143,7 +143,11 @@ const validatePriceRange = (
 	}
 };
 
-export const listingQuerySchema = listingQueryBaseSchema.superRefine(validatePriceRange);
+export const listingQuerySchema = listingQueryBaseSchema
+	.extend({
+		search: z.string().trim().min(1).optional(),
+	})
+	.superRefine(validatePriceRange);
 
 export const listingSearchSchema = listingQueryBaseSchema
 	.extend({
