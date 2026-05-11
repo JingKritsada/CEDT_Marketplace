@@ -41,16 +41,17 @@ const buildFilter = (query: ListingQueryInput): Prisma.ListingWhereInput => {
 	}
 
 	if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-		where.price = {
-			gte:
-				query.minPrice && !isNaN(Number(query.minPrice))
-					? Number(query.minPrice)
-					: undefined,
-			lte:
-				query.maxPrice && !isNaN(Number(query.maxPrice))
-					? Number(query.maxPrice)
-					: undefined,
-		};
+		const priceFilter: Prisma.IntFilter = {};
+
+		if (query.minPrice !== undefined) {
+			priceFilter.gte = query.minPrice;
+		}
+
+		if (query.maxPrice !== undefined) {
+			priceFilter.lte = query.maxPrice;
+		}
+
+		where.price = priceFilter;
 	}
 
 	return where;

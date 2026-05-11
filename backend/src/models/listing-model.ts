@@ -27,11 +27,11 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
  *           default: false
  *         status:
  *           type: string
- *           enum: [AVAILABLE, PENDING, SOLD]
+ *           enum: [AVAILABLE, RESERVED, SOLD]
  *           default: AVAILABLE
  *         condition:
  *           type: string
- *           enum: [LIKE_NEW, GOOD, FAIR, POOR, FOR_PARTS]
+ *           enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
  *           default: GOOD
  *         categoryId:
  *           type: string
@@ -78,7 +78,7 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
  *       properties:
  *         status:
  *           type: string
- *           enum: [AVAILABLE, PENDING, SOLD]
+ *           enum: [AVAILABLE, RESERVED, SOLD]
  *         categoryId:
  *           type: string
  *         courseCode:
@@ -94,26 +94,62 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
 export const createListingSchema = z.object({
 	title: z.string().trim().min(1).max(140),
 	description: z.string().trim().min(1),
-	price: z.coerce.number().min(0),
+	price: z.coerce.number().int().min(0),
 	isFree: z.coerce.boolean().default(false),
 	status: z.enum(ListingStatus).default(ListingStatus.AVAILABLE),
 	condition: z.enum(ListingCondition).default(ListingCondition.GOOD),
 	categoryId: z.string().trim().min(1),
 	pickupLocationId: z.string().trim().min(1),
 	courseCode: z.string().trim().min(1).max(16).optional(),
-	images: z.array(z.string()).default([]),
+	images: z.array(z.string().trim().url()).default([]),
 });
 
-export const updateListingSchema = createListingSchema.partial();
+export const updateListingSchema = z.object({
+	title: z.string().trim().min(1).max(140).optional(),
+	description: z.string().trim().min(1).optional(),
+	price: z.coerce.number().int().min(0).optional(),
+	isFree: z.coerce.boolean().optional(),
+	status: z.enum(ListingStatus).optional(),
+	condition: z.enum(ListingCondition).optional(),
+	categoryId: z.string().trim().min(1).optional(),
+	pickupLocationId: z.string().trim().min(1).optional(),
+	courseCode: z.string().trim().min(1).max(16).optional(),
+	images: z.array(z.string().trim().url()).optional(),
+});
 
-export const listingQuerySchema = z.object({
+const listingQueryBaseSchema = z.object({
 	status: z.enum(ListingStatus).optional(),
 	categoryId: z.string().trim().optional(),
 	courseCode: z.string().trim().optional(),
 	minPrice: z.coerce.number().int().min(0).optional(),
 	maxPrice: z.coerce.number().int().min(0).optional(),
-	search: z.string().trim().optional(),
+	search: z.string().trim().min(1).optional(),
 });
+
+const validatePriceRange = (
+	data: z.infer<typeof listingQueryBaseSchema>,
+	ctx: z.RefinementCtx
+): void => {
+	if (
+		data.minPrice !== undefined &&
+		data.maxPrice !== undefined &&
+		data.maxPrice < data.minPrice
+	) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			message: "maxPrice must be greater than or equal to minPrice",
+			path: ["maxPrice"],
+		});
+	}
+};
+
+export const listingQuerySchema = listingQueryBaseSchema.superRefine(validatePriceRange);
+
+export const listingSearchSchema = listingQueryBaseSchema
+	.extend({
+		search: z.string().trim().min(1),
+	})
+	.superRefine(validatePriceRange);
 
 export const listingIdSchema = z.object({
 	id: z.string().trim().min(1),

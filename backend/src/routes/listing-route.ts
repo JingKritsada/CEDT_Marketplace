@@ -12,6 +12,7 @@ import {
 	createListingSchema,
 	listingIdSchema,
 	listingQuerySchema,
+	listingSearchSchema,
 	updateListingSchema,
 } from "@/models/listing-model.js";
 import { requireAuth } from "@/middlewares/auth.js";
@@ -73,7 +74,7 @@ listingRouter.get("/", validate(listingQuerySchema, "query"), getListings);
  *       200:
  *         description: Search results
  */
-listingRouter.get("/search", validate(listingQuerySchema, "query"), searchListings);
+listingRouter.get("/search", validate(listingSearchSchema, "query"), searchListings);
 
 /**
  * @swagger

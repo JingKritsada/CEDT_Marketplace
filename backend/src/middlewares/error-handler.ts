@@ -5,14 +5,37 @@ import { Prisma } from "@prisma/client";
 
 import { ApiError } from "@/utils/api-error.js";
 
+const logUnhandledError = (err: unknown): void => {
+	if (process.env.NODE_ENV === "test") {
+		return;
+	}
+
+	if (err instanceof ApiError && err.statusCode < 500) {
+		return;
+	}
+
+	const message = (() => {
+		if (err instanceof Error) {
+			return err.stack ?? err.message;
+		}
+
+		try {
+			return JSON.stringify(err);
+		} catch {
+			return String(err);
+		}
+	})();
+
+	process.stderr.write(`Error caught by Global Handler: ${message}\n`);
+};
+
 export const errorHandler = (
 	err: unknown,
 	_req: Request,
 	res: Response,
 	_next: NextFunction
 ): void => {
-
-	console.error("Error caught by Global Handler:", err);
+	logUnhandledError(err);
 
 	if (err instanceof ApiError) {
 		res.status(err.statusCode).json({

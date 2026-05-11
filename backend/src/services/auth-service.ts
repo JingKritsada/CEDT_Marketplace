@@ -17,8 +17,21 @@ interface AuthResult {
 	};
 }
 
-const extractUsernameFromEmail = (email: string): string => {
-	return email.split("@")[0];
+const allowedEmailDomains = env.ALLOWED_EMAIL_DOMAINS.split(",")
+	.map((domain) => domain.trim().replace(/^@/, "").toLowerCase())
+	.filter(Boolean);
+
+const ensureAllowedEmail = (email: string): void => {
+	if (allowedEmailDomains.length === 0) {
+		return;
+	}
+
+	const normalizedEmail = email.toLowerCase();
+	const isAllowed = allowedEmailDomains.some((domain) => normalizedEmail.endsWith(`@${domain}`));
+
+	if (!isAllowed) {
+		throw new ApiError("Email domain is not allowed", 400);
+	}
 };
 
 const issueTokens = async (
@@ -43,6 +56,7 @@ const issueTokens = async (
 
 export const authService = {
 	async register(input: RegisterInput): Promise<AuthResult> {
+		ensureAllowedEmail(input.email);
 		const existingUser = await prisma.user.findUnique({
 			where: { email: input.email },
 		});
@@ -76,52 +90,53 @@ export const authService = {
 	},
 
 	async login(input: LoginInput): Promise<AuthResult> {
+		ensureAllowedEmail(input.email);
 		const existingUser = await prisma.user.findUnique({
 			where: { email: input.email },
 		});
 
-		let user = existingUser;
-
-		if (!user) {
-			const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_SALT_ROUNDS);
-
-			user = await prisma.user.create({
-				data: {
-					email: input.email,
-					displayName: extractUsernameFromEmail(input.email),
-					studentId: extractUsernameFromEmail(input.email),
-					passwordHash,
-				},
-			});
+		if (!existingUser) {
+			throw new ApiError("Invalid credentials", 401);
 		}
 
-		const passwordMatches = await bcrypt.compare(input.password, user.passwordHash);
+		const passwordMatches = await bcrypt.compare(input.password, existingUser.passwordHash);
 
 		if (!passwordMatches) {
 			throw new ApiError("Invalid credentials", 401);
 		}
 
-		const tokens = await issueTokens(user.id, user.email);
+		const tokens = await issueTokens(existingUser.id, existingUser.email);
 
 		return {
 			...tokens,
 			user: {
-				id: user.id,
-				email: user.email,
-				displayName: user.displayName,
-				studentId: user.studentId,
+				id: existingUser.id,
+				email: existingUser.email,
+				displayName: existingUser.displayName,
+				studentId: existingUser.studentId,
 			},
 		};
 	},
 
 	async refresh(token: string): Promise<{ accessToken: string; refreshToken: string }> {
-		const payload = verifyRefreshToken(token);
+		let payload: { sub: string; email: string };
+
+		try {
+			payload = verifyRefreshToken(token);
+		} catch {
+			throw new ApiError("Refresh token is invalid or expired", 401);
+		}
 
 		const existingToken = await prisma.refreshToken.findUnique({
 			where: { token },
 		});
 
 		if (!existingToken || existingToken.expiresAt.getTime() < Date.now()) {
+			if (existingToken) {
+				await prisma.refreshToken.delete({
+					where: { token },
+				});
+			}
 			throw new ApiError("Refresh token is invalid or expired", 401);
 		}
 
