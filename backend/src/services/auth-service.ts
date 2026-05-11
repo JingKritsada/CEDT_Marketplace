@@ -17,19 +17,20 @@ interface AuthResult {
 	};
 }
 
-const allowedEmailDomains = env.ALLOWED_EMAIL_DOMAINS.split(",")
-	.map((domain) => domain.trim().replace(/^@/, "").toLowerCase())
-	.filter(Boolean);
+const allowedEmailDomains = new Set(
+	env.ALLOWED_EMAIL_DOMAINS.split(",")
+		.map((domain) => domain.trim().replace(/^@/, "").toLowerCase())
+		.filter(Boolean)
+);
 
 const ensureAllowedEmail = (email: string): void => {
-	if (allowedEmailDomains.length === 0) {
+	if (allowedEmailDomains.size === 0) {
 		return;
 	}
 
-	const normalizedEmail = email.toLowerCase();
-	const isAllowed = allowedEmailDomains.some((domain) => normalizedEmail.endsWith(`@${domain}`));
+	const emailDomain = email.toLowerCase().split("@").pop();
 
-	if (!isAllowed) {
+	if (!emailDomain || !allowedEmailDomains.has(emailDomain)) {
 		throw new ApiError("Email domain is not allowed", 400);
 	}
 };

@@ -91,30 +91,39 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
  *           type: string
  */
 
-export const createListingSchema = z.object({
+const listingFieldSchema = {
 	title: z.string().trim().min(1).max(140),
 	description: z.string().trim().min(1),
 	price: z.coerce.number().int().min(0),
-	isFree: z.coerce.boolean().default(false),
-	status: z.enum(ListingStatus).default(ListingStatus.AVAILABLE),
-	condition: z.enum(ListingCondition).default(ListingCondition.GOOD),
+	isFree: z.coerce.boolean(),
+	status: z.enum(ListingStatus),
+	condition: z.enum(ListingCondition),
 	categoryId: z.string().trim().min(1),
 	pickupLocationId: z.string().trim().min(1),
-	courseCode: z.string().trim().min(1).max(16).optional(),
-	images: z.array(z.string().trim().url()).default([]),
+	courseCode: z.string().trim().min(1).max(16),
+	images: z.array(z.string().trim().url()),
+};
+
+export const createListingSchema = z.object({
+	...listingFieldSchema,
+	isFree: listingFieldSchema.isFree.default(false),
+	status: listingFieldSchema.status.default(ListingStatus.AVAILABLE),
+	condition: listingFieldSchema.condition.default(ListingCondition.GOOD),
+	courseCode: listingFieldSchema.courseCode.optional(),
+	images: listingFieldSchema.images.default([]),
 });
 
 export const updateListingSchema = z.object({
-	title: z.string().trim().min(1).max(140).optional(),
-	description: z.string().trim().min(1).optional(),
-	price: z.coerce.number().int().min(0).optional(),
-	isFree: z.coerce.boolean().optional(),
-	status: z.enum(ListingStatus).optional(),
-	condition: z.enum(ListingCondition).optional(),
-	categoryId: z.string().trim().min(1).optional(),
-	pickupLocationId: z.string().trim().min(1).optional(),
-	courseCode: z.string().trim().min(1).max(16).optional(),
-	images: z.array(z.string().trim().url()).optional(),
+	title: listingFieldSchema.title.optional(),
+	description: listingFieldSchema.description.optional(),
+	price: listingFieldSchema.price.optional(),
+	isFree: listingFieldSchema.isFree.optional(),
+	status: listingFieldSchema.status.optional(),
+	condition: listingFieldSchema.condition.optional(),
+	categoryId: listingFieldSchema.categoryId.optional(),
+	pickupLocationId: listingFieldSchema.pickupLocationId.optional(),
+	courseCode: listingFieldSchema.courseCode.optional(),
+	images: listingFieldSchema.images.optional(),
 });
 
 const listingQueryBaseSchema = z.object({
