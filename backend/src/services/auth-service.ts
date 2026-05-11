@@ -31,7 +31,7 @@ const ensureAllowedEmail = (email: string): void => {
 	const atIndex = email.lastIndexOf("@");
 
 	if (atIndex <= 0 || atIndex === email.length - 1) {
-		throw new ApiError("Email domain is not allowed", 400);
+		throw new ApiError("Invalid email format", 400);
 	}
 
 	const emailDomain = email.slice(atIndex + 1).toLowerCase();

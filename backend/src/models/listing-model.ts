@@ -146,7 +146,7 @@ const validatePriceRange = (data: ListingQueryRangeInput, ctx: z.RefinementCtx):
 	) {
 		ctx.addIssue({
 			code: z.ZodIssueCode.custom,
-			message: "maxPrice must be greater than or equal to minPrice",
+			message: "maxPrice cannot be less than minPrice",
 			path: ["maxPrice"],
 		});
 	}
