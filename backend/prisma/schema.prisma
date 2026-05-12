@@ -41,9 +41,6 @@ model User {
     updatedAt     DateTime       @updatedAt
     listings      Listing[]      @relation("SellerListings")
     buyerListings Listing[]      @relation("BuyerListings")
-    buyerChatRoom ChatRoom[]     @relation("BuyerChatRooms")
-    sellerChat    ChatRoom[]     @relation("SellerChatRooms")
-    messages      Message[]
     refreshTokens RefreshToken[]
     reviewsWritten Review[]       @relation("ReviewerReviews")
     reviewsReceived Review[]      @relation("SellerReviews")
@@ -89,7 +86,6 @@ model Listing {
     buyer            User?            @relation("BuyerListings", fields: [buyerId], references: [id], onDelete: SetNull)
     category         Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
     pickupLocation   PickupLocation?  @relation(fields: [pickupLocationId], references: [id], onDelete: SetNull)
-    chatRooms        ChatRoom[]
     reviews          Review[]
     cartItems        CartItem[]
 
@@ -97,35 +93,6 @@ model Listing {
     @@index([buyerId])
     @@index([status])
     @@index([courseCode])
-}
-
-model ChatRoom {
-    id        String    @id @default(cuid())
-    listingId String
-    buyerId   String
-    sellerId  String
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
-    buyer     User      @relation("BuyerChatRooms", fields: [buyerId], references: [id], onDelete: Cascade)
-    seller    User      @relation("SellerChatRooms", fields: [sellerId], references: [id], onDelete: Cascade)
-    messages  Message[]
-
-    @@unique([listingId, buyerId])
-    @@index([sellerId])
-}
-
-model Message {
-    id         String   @id @default(cuid())
-    chatRoomId String
-    senderId   String
-    content    String
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
-    chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
-    sender     User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
-
-    @@index([chatRoomId])
 }
 
 model RefreshToken {

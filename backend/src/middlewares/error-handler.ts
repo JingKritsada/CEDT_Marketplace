@@ -11,8 +11,6 @@ export const errorHandler = (
 	res: Response,
 	_next: NextFunction
 ): void => {
-	console.error("Error caught by Global Handler:", err);
-
 	if (err instanceof ApiError) {
 		res.status(err.statusCode).json({
 			message: err.message,

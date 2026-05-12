@@ -11,12 +11,12 @@
 		"noEmit": false,
 		"outDir": "dist",
 		"rootDir": ".",
+		"types": ["node"],
 
 		/* Path aliases */
 		"paths": {
 			"@/*": ["./src/*"]
 		},
-		"types": ["node"],
 
 		/* Linting */
 		"strict": true,
@@ -25,5 +25,5 @@
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedSideEffectImports": true
 	},
-	"include": ["src", "tests", "prisma", "server.ts"]
+	"include": ["src", "tests", "prisma.config.ts", "server.ts"]
 }
