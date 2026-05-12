@@ -37,3 +37,8 @@ struct LoginView: View {
         .navigationTitle("Login")
     }
 }
+
+#Preview {
+    LoginView()
+        .environmentObject(SessionViewModel())
+}

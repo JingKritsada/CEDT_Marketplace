@@ -34,3 +34,32 @@ struct ListingCardView: View {
         }
     }
 }
+
+#Preview {
+    let listing = Listing(
+        id: "listing-1",
+        sellerId: "seller-1",
+        buyerId: nil,
+        title: "Engineering Textbook",
+        description: "Clean pages, no highlights.",
+        price: 250,
+        isFree: false,
+        status: .available,
+        condition: .good,
+        courseCode: "ENGR201",
+        categoryId: "cat-1",
+        pickupLocationId: "loc-1",
+        images: ["https://picsum.photos/300"],
+        createdAt: Date(),
+        updatedAt: Date(),
+        seller: UserSummary(id: "seller-1", displayName: "Nina Student", avatarUrl: nil),
+        buyer: nil,
+        category: Category(id: "cat-1", name: "Books", slug: "books"),
+        pickupLocation: PickupLocation(id: "loc-1", name: "Library", building: "B2", description: nil),
+        reviews: nil
+    )
+
+    return ListingCardView(listing: listing)
+        .padding()
+        .previewLayout(.sizeThatFits)
+}

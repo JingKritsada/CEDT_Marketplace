@@ -71,3 +71,9 @@ struct PostItemView: View {
         .task { await viewModel.loadOptions() }
     }
 }
+
+#Preview {
+    NavigationStack {
+        PostItemView()
+    }
+}

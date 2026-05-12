@@ -73,3 +73,7 @@ struct FilterModalView: View {
         }
     }
 }
+
+#Preview {
+    FilterModalView(activeQuery: .constant(nil))
+}

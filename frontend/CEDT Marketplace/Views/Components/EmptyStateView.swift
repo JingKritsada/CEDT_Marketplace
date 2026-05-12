@@ -16,3 +16,7 @@ struct EmptyStateView: View {
         .padding()
     }
 }
+
+#Preview {
+    EmptyStateView(title: "Nothing here", message: "Try again later.")
+}

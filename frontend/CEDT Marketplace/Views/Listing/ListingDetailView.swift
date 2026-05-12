@@ -99,3 +99,9 @@ struct ListingDetailView: View {
         }
     }
 }
+
+#Preview {
+    NavigationStack {
+        ListingDetailView(listingId: "listing-1")
+    }
+}

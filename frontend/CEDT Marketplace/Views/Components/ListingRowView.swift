@@ -45,3 +45,32 @@ struct ListingRowView: View {
         }
     }
 }
+
+#Preview {
+    let listing = Listing(
+        id: "listing-1",
+        sellerId: "seller-1",
+        buyerId: nil,
+        title: "Engineering Calculator",
+        description: "Lightly used calculator for exams.",
+        price: 450,
+        isFree: false,
+        status: .available,
+        condition: .good,
+        courseCode: "ENGR101",
+        categoryId: "cat-1",
+        pickupLocationId: "loc-1",
+        images: ["https://picsum.photos/200"],
+        createdAt: Date(),
+        updatedAt: Date(),
+        seller: UserSummary(id: "seller-1", displayName: "Pat Student", avatarUrl: nil),
+        buyer: nil,
+        category: Category(id: "cat-1", name: "Electronics", slug: "electronics"),
+        pickupLocation: PickupLocation(id: "loc-1", name: "Main Hall", building: "A1", description: nil),
+        reviews: [Review(id: "rev-1", rating: 5, comment: "Great!", reviewer: nil, createdAt: Date())]
+    )
+
+    return ListingRowView(listing: listing)
+        .padding()
+        .previewLayout(.sizeThatFits)
+}

@@ -28,3 +28,10 @@ struct ImageCarousel: View {
         .frame(height: 220)
     }
 }
+
+#Preview {
+    ImageCarousel(imageUrls: [
+        "https://picsum.photos/400/300",
+        "https://picsum.photos/401/300"
+    ])
+}

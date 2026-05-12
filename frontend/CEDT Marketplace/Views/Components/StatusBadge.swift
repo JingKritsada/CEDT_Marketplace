@@ -26,3 +26,9 @@ struct StatusBadge: View {
             .clipShape(Capsule())
     }
 }
+
+#Preview {
+    StatusBadge(status: .available)
+        .padding()
+        .previewLayout(.sizeThatFits)
+}

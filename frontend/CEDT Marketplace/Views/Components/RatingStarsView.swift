@@ -12,3 +12,9 @@ struct RatingStarsView: View {
         }
     }
 }
+
+#Preview {
+    RatingStarsView(rating: 4.5)
+        .padding()
+        .previewLayout(.sizeThatFits)
+}

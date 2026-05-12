@@ -37,3 +37,8 @@ struct RegisterView: View {
         .navigationTitle("Register")
     }
 }
+
+#Preview {
+    RegisterView()
+        .environmentObject(SessionViewModel())
+}

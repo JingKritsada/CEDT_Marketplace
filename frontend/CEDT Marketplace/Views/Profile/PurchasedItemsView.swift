@@ -10,3 +10,32 @@ struct PurchasedItemsView: View {
         .navigationTitle("Purchased Items")
     }
 }
+
+#Preview {
+    let listing = Listing(
+        id: "listing-1",
+        sellerId: "seller-1",
+        buyerId: "buyer-1",
+        title: "Circuit Kit",
+        description: "Includes breadboard and wires.",
+        price: 200,
+        isFree: false,
+        status: .paid,
+        condition: .good,
+        courseCode: "EE101",
+        categoryId: "cat-1",
+        pickupLocationId: "loc-1",
+        images: [],
+        createdAt: Date(),
+        updatedAt: Date(),
+        seller: UserSummary(id: "seller-1", displayName: "Alex Student", avatarUrl: nil),
+        buyer: UserSummary(id: "buyer-1", displayName: "You", avatarUrl: nil),
+        category: Category(id: "cat-1", name: "Electronics", slug: "electronics"),
+        pickupLocation: PickupLocation(id: "loc-1", name: "Tech Center", building: "D4", description: nil),
+        reviews: nil
+    )
+
+    return NavigationStack {
+        PurchasedItemsView(listings: [listing])
+    }
+}

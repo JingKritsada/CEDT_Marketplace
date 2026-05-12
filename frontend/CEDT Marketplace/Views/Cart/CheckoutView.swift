@@ -47,3 +47,9 @@ struct CheckoutView: View {
         }
     }
 }
+
+#Preview {
+    NavigationStack {
+        CheckoutView()
+    }
+}

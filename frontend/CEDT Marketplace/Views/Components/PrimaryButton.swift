@@ -19,3 +19,8 @@ struct PrimaryButton: View {
         .tint(.accentPrimary)
     }
 }
+
+#Preview {
+    PrimaryButton(title: "Primary", action: {})
+        .padding()
+}
