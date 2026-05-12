@@ -48,32 +48,47 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
  *           items:
  *             type: string
  *             format: uri
+ *           maxItems: 10
  *     UpdateListingInput:
  *       type: object
  *       properties:
  *         title:
  *           type: string
+ *           maxLength: 140
+ *           minLength: 1
  *         description:
  *           type: string
+ *           minLength: 1
  *         price:
  *           type: integer
+ *           minimum: 0
  *         isFree:
  *           type: boolean
  *         status:
  *           type: string
+ *           enum: [AVAILABLE, RESERVED, WAITING_FOR_PAYMENT, PAID, WAITING_FOR_PICKUP, SENT, RECEIVED, RATED, SOLD]
  *         condition:
  *           type: string
+ *           enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
  *         categoryId:
  *           type: string
+ *           minLength: 1
  *         pickupLocationId:
  *           type: string
+ *           minLength: 1
  *         courseCode:
  *           type: string
+ *           maxLength: 16
+ *           minLength: 1
  *         images:
  *           type: array
  *           items:
  *             type: string
  *             format: uri
+ *           maxItems: 10
+ *         buyerId:
+ *           type: string
+ *           minLength: 1
  *     ListingQueryInput:
  *       type: object
  *       properties:
@@ -86,8 +101,10 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
  *           type: string
  *         minPrice:
  *           type: integer
+ *           minimum: 0
  *         maxPrice:
  *           type: integer
+ *           minimum: 0
  *         search:
  *           type: string
  */

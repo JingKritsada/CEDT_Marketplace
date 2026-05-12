@@ -32,6 +32,7 @@ export const listingRouter = Router();
  *         name: status
  *         schema:
  *           type: string
+ *           enum: [AVAILABLE, RESERVED, WAITING_FOR_PAYMENT, PAID, WAITING_FOR_PICKUP, SENT, RECEIVED, RATED, SOLD]
  *       - in: query
  *         name: categoryId
  *         schema:
@@ -44,10 +45,12 @@ export const listingRouter = Router();
  *         name: minPrice
  *         schema:
  *           type: integer
+ *           minimum: 0
  *       - in: query
  *         name: maxPrice
  *         schema:
  *           type: integer
+ *           minimum: 0
  *       - in: query
  *         name: search
  *         schema:
@@ -69,7 +72,6 @@ listingRouter.get("/", validate(listingQuerySchema, "query"), getListings);
  *         name: search
  *         schema:
  *           type: string
- *           required: true
  *     responses:
  *       200:
  *         description: Search results
@@ -109,31 +111,7 @@ listingRouter.get("/:id", validate(listingIdSchema, "params"), getListingById);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [title, description, price]
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               isFree:
- *                 type: boolean
- *               status:
- *                 type: string
- *               condition:
- *                 type: string
- *               categoryId:
- *                 type: string
- *               pickupLocationId:
- *                 type: string
- *               courseCode:
- *                 type: string
- *               images:
- *                 type: array
- *                 items:
- *                   type: string
+ *             $ref: '#/components/schemas/CreateListingInput'
  *     responses:
  *       201:
  *         description: Listing created
@@ -157,36 +135,11 @@ listingRouter.post("/", writeRateLimit, requireAuth, validate(createListingSchem
  *         schema:
  *           type: string
  *     requestBody:
- *       optional: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               isFree:
- *                 type: boolean
- *               status:
- *                 type: string
- *               condition:
- *                 type: string
- *               categoryId:
- *                 type: string
- *               pickupLocationId:
- *                 type: string
- *               courseCode:
- *                 type: string
- *               images:
- *                 type: array
- *                 items:
- *                   type: string
- *               buyerId:
- *                 type: string
+ *             $ref: '#/components/schemas/UpdateListingInput'
  *     responses:
  *       200:
  *         description: Listing updated

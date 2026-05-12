@@ -23,17 +23,7 @@ export const authRouter = Router();
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [studentId, email, displayName, password]
- *             properties:
- *               studentId:
- *                 type: string
- *               email:
- *                 type: string
- *               displayName:
- *                 type: string
- *               password:
- *                 type: string
+ *             $ref: '#/components/schemas/RegisterInput'
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -53,13 +43,7 @@ authRouter.post("/register", authRateLimit, validate(registerSchema), register);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [email, password]
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *             $ref: '#/components/schemas/LoginInput'
  *     responses:
  *       200:
  *         description: Login successful
@@ -79,11 +63,7 @@ authRouter.post("/login", authRateLimit, validate(loginSchema), login);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [refreshToken]
- *             properties:
- *               refreshToken:
- *                 type: string
+ *             $ref: '#/components/schemas/RefreshTokenInput'
  *     responses:
  *       200:
  *         description: Token refreshed
@@ -101,11 +81,7 @@ authRouter.post("/refresh", authRateLimit, validate(refreshTokenSchema), refresh
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [refreshToken]
- *             properties:
- *               refreshToken:
- *                 type: string
+ *             $ref: '#/components/schemas/RefreshTokenInput'
  *     responses:
  *       200:
  *         description: Logged out successfully
