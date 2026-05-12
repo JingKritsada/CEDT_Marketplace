@@ -2,7 +2,7 @@
 
 ## Project Title and Description
 
-CEDT Community Marketplace Backend is a Node.js REST API for an iOS marketplace that helps engineering students buy, sell, and give away robotics and hardware equipment. It provides authentication, listing management, chat, reviews, carts, and pickup locations, with Prisma + PostgreSQL as the data layer.
+CEDT Community Marketplace Backend is a Node.js REST API for an iOS marketplace that helps engineering students buy, sell, and give away robotics and hardware equipment. It provides authentication, listing management, reviews, carts, and pickup locations, with Prisma + PostgreSQL as the data layer.
 
 ## Tech Stack
 
@@ -112,15 +112,6 @@ STUDENT_EMAIL_DOMAIN="student.chula.ac.th"
 | POST   | /cart/items            | Add listing to cart | Yes  |
 | DELETE | /cart/items/:listingId | Remove item         | Yes  |
 | DELETE | /cart/clear            | Clear cart          | Yes  |
-
-### Chat
-
-| Method | Path                     | Description          | Auth |
-| ------ | ------------------------ | -------------------- | ---- |
-| GET    | /chat/rooms              | List rooms for user  | Yes  |
-| POST   | /chat/rooms              | Create or fetch room | Yes  |
-| GET    | /chat/rooms/:id/messages | Get room messages    | Yes  |
-| POST   | /chat/rooms/:id/messages | Send message         | Yes  |
 
 ### Reviews
 
