@@ -36,7 +36,7 @@ final class PostItemViewModel: ObservableObject {
             async let categories = categoryService.fetchCategories()
             async let locations = pickupLocationService.fetchPickupLocations()
             self.categories = try await categories
-            self.pickupLocations = try await locations
+            pickupLocations = try await locations
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {

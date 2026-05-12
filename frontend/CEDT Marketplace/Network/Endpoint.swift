@@ -51,15 +51,15 @@ enum Endpoint {
             return "/listings"
         case .search:
             return "/listings/search"
-        case .listingDetail(let id):
+        case let .listingDetail(id):
             return "/listings/\(id)"
         case .createListing:
             return "/listings"
-        case .updateListing(let id):
+        case let .updateListing(id):
             return "/listings/\(id)"
-        case .deleteListing(let id):
+        case let .deleteListing(id):
             return "/listings/\(id)"
-        case .confirmReceived(let id):
+        case let .confirmReceived(id):
             return "/listings/\(id)/confirm-received"
         case .categories:
             return "/categories"
@@ -73,7 +73,7 @@ enum Endpoint {
             return "/cart"
         case .addToCart:
             return "/cart/items"
-        case .removeFromCart(let listingId):
+        case let .removeFromCart(listingId):
             return "/cart/items/\(listingId)"
         case .clearCart:
             return "/cart/clear"
@@ -100,11 +100,11 @@ enum Endpoint {
         components?.path = path
 
         switch self {
-        case .listings(let query), .search(let query):
+        case let .listings(query), let .search(query):
             components?.queryItems = query?.toQueryItems()
-        case .reviewsByListing(let listingId):
+        case let .reviewsByListing(listingId):
             components?.queryItems = [URLQueryItem(name: "listingId", value: listingId)]
-        case .reviewsBySeller(let sellerId):
+        case let .reviewsBySeller(sellerId):
             components?.queryItems = [URLQueryItem(name: "sellerId", value: sellerId)]
         default:
             break

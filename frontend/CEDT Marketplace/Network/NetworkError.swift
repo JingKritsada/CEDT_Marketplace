@@ -21,9 +21,9 @@ enum NetworkError: Error {
             return "You do not have permission to do that."
         case .notFound:
             return "The requested resource was not found."
-        case .validationError(let message):
+        case let .validationError(message):
             return message
-        case .serverError(let message):
+        case let .serverError(message):
             return message
         case .decodingFailed:
             return "Failed to read server response."

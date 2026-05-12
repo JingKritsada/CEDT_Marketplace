@@ -8,7 +8,7 @@ struct ImageCarousel: View {
             ForEach(imageUrls, id: \.self) { url in
                 AsyncImage(url: URL(string: url)) { phase in
                     switch phase {
-                    case .success(let image):
+                    case let .success(image):
                         image
                             .resizable()
                             .scaledToFill()
@@ -32,6 +32,6 @@ struct ImageCarousel: View {
 #Preview {
     ImageCarousel(imageUrls: [
         "https://picsum.photos/400/300",
-        "https://picsum.photos/401/300"
+        "https://picsum.photos/401/300",
     ])
 }

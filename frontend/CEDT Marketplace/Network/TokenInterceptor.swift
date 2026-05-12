@@ -31,7 +31,7 @@ final class TokenInterceptor {
             throw NetworkError.unknown
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
             throw NetworkError.unauthorized
         }
 

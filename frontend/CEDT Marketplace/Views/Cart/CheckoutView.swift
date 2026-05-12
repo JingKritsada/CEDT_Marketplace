@@ -33,7 +33,7 @@ struct CheckoutView: View {
             }
         }
         .alert("Order Confirmed", isPresented: $viewModel.isConfirmed) {
-            Button("OK") { }
+            Button("OK") {}
         } message: {
             Text("Your pickup details have been saved.")
         }

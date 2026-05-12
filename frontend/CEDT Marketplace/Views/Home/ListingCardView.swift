@@ -8,7 +8,7 @@ struct ListingCardView: View {
             if let firstImage = listing.images.first, let url = URL(string: firstImage) {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let image):
+                    case let .success(image):
                         image
                             .resizable()
                             .scaledToFill()

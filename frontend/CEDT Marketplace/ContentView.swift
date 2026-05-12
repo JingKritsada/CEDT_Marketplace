@@ -22,6 +22,11 @@ struct MainTabView: View {
                     Label("Home", systemImage: "house")
                 }
 
+            PostItemView()
+                .tabItem {
+                    Label("Post", systemImage: "plus.circle")
+                }
+
             CartView()
                 .tabItem {
                     Label("Cart", systemImage: "cart")

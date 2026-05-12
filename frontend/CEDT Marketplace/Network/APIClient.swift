@@ -14,10 +14,10 @@ final class APIClient {
     ) {
         self.session = session
         self.tokenInterceptor = tokenInterceptor
-        self.decoder = JSONDecoder()
-        self.decoder.dateDecodingStrategy = .iso8601
-        self.encoder = JSONEncoder()
-        self.encoder.dateEncodingStrategy = .iso8601
+        decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
     }
 
     func request<T: Decodable>(_ endpoint: Endpoint, body: Encodable? = nil) async throws -> T {
@@ -89,7 +89,7 @@ final class APIClient {
 
     private func handleResponse(_ response: HTTPURLResponse, data: Data) throws -> Data {
         switch response.statusCode {
-        case 200...299:
+        case 200 ... 299:
             return data
         case 401:
             throw NetworkError.unauthorized
@@ -119,7 +119,7 @@ private struct AnyEncodable: Encodable {
     private let encodeFunc: (Encoder) throws -> Void
 
     init(_ encodable: Encodable) {
-        self.encodeFunc = encodable.encode
+        encodeFunc = encodable.encode
     }
 
     func encode(to encoder: Encoder) throws {
