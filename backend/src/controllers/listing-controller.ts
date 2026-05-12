@@ -46,3 +46,12 @@ export const deleteListing = asyncHandler(async (req: Request, res: Response) =>
 
 	res.status(204).send();
 });
+
+export const confirmListingReceived = asyncHandler(async (req: Request, res: Response) => {
+	const listing = await listingService.confirmReceived(
+		getListingId(req.params.id),
+		req.auth!.userId
+	);
+
+	res.status(200).json(listing);
+});

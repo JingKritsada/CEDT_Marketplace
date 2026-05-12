@@ -27,11 +27,11 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
  *           default: false
  *         status:
  *           type: string
- *           enum: [AVAILABLE, PENDING, SOLD]
+ *           enum: [AVAILABLE, RESERVED, WAITING_FOR_PAYMENT, PAID, WAITING_FOR_PICKUP, SENT, RECEIVED, RATED, SOLD]
  *           default: AVAILABLE
  *         condition:
  *           type: string
- *           enum: [LIKE_NEW, GOOD, FAIR, POOR, FOR_PARTS]
+ *           enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
  *           default: GOOD
  *         categoryId:
  *           type: string
@@ -73,12 +73,13 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
  *           type: array
  *           items:
  *             type: string
+ *             format: uri
  *     ListingQueryInput:
  *       type: object
  *       properties:
  *         status:
  *           type: string
- *           enum: [AVAILABLE, PENDING, SOLD]
+ *           enum: [AVAILABLE, RESERVED, WAITING_FOR_PAYMENT, PAID, WAITING_FOR_PICKUP, SENT, RECEIVED, RATED, SOLD]
  *         categoryId:
  *           type: string
  *         courseCode:
@@ -94,17 +95,19 @@ import { ListingCondition, ListingStatus } from "@prisma/client";
 export const createListingSchema = z.object({
 	title: z.string().trim().min(1).max(140),
 	description: z.string().trim().min(1),
-	price: z.coerce.number().min(0),
+	price: z.coerce.number().int().min(0),
 	isFree: z.coerce.boolean().default(false),
 	status: z.enum(ListingStatus).default(ListingStatus.AVAILABLE),
 	condition: z.enum(ListingCondition).default(ListingCondition.GOOD),
 	categoryId: z.string().trim().min(1),
 	pickupLocationId: z.string().trim().min(1),
 	courseCode: z.string().trim().min(1).max(16).optional(),
-	images: z.array(z.string()).default([]),
+	images: z.array(z.string().url()).max(10).default([]),
 });
 
-export const updateListingSchema = createListingSchema.partial();
+export const updateListingSchema = createListingSchema.partial().extend({
+	buyerId: z.string().trim().min(1).optional(),
+});
 
 export const listingQuerySchema = z.object({
 	status: z.enum(ListingStatus).optional(),

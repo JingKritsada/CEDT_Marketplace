@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
 	createListing,
 	deleteListing,
+	confirmListingReceived,
 	getListingById,
 	getListings,
 	searchListings,
@@ -184,6 +185,8 @@ listingRouter.post("/", writeRateLimit, requireAuth, validate(createListingSchem
  *                 type: array
  *                 items:
  *                   type: string
+ *               buyerId:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Listing updated
@@ -201,6 +204,38 @@ listingRouter.patch(
 	validate(listingIdSchema, "params"),
 	validate(updateListingSchema),
 	updateListing
+);
+
+/**
+ * @swagger
+ * /listings/{id}/confirm-received:
+ *   post:
+ *     summary: Confirm a listing has been received by the buyer
+ *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Listing marked as received
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not found
+ */
+listingRouter.post(
+	"/:id/confirm-received",
+	writeRateLimit,
+	requireAuth,
+	validate(listingIdSchema, "params"),
+	confirmListingReceived
 );
 
 /**

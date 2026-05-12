@@ -8,6 +8,7 @@ const envSchema = z.object({
 	PORT: z.coerce.number().int().positive().default(3003),
 	CORS_ORIGIN: z.string().default("http://localhost:3003"),
 	BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
+	STUDENT_EMAIL_DOMAIN: z.string().default("student.chula.ac.th"),
 	JWT_SECRET: z.string().min(32).optional(),
 	JWT_REFRESH_SECRET: z.string().min(32).optional(),
 });

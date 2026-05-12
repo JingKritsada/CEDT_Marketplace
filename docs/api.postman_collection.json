@@ -1,11 +1,29 @@
 {
 	"info": {
-		"_postman_id": "4fc5ccab-4163-4fd2-933f-3960e957701b",
+		"_postman_id": "b0d5f9b2-7b4c-4b88-9a8b-1a9e0c6d6a10",
 		"name": "CEDT Marketplace",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "40765854"
 	},
 	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/health",
+							"host": ["{{URL}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
 		{
 			"name": "Authentication",
 			"item": [
@@ -13,21 +31,13 @@
 					"name": "Register",
 					"event": [
 						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [""],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
-						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.environment.set(\"TOKEN\", pm.response.json().token)"
+									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)",
+									"pm.environment.set(\"REFRESH_TOKEN\", pm.response.json().refreshToken)"
 								],
-								"type": "text/javascript",
-								"packages": {}
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -36,19 +46,12 @@
 						"header": [
 							{
 								"key": "Content-Type",
-								"value": "application/json",
-								"description": "JSON Type",
-								"type": "text"
+								"value": "application/json"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"studentId\": \"666776766767\",\n  \"email\": \"test66676@student.chula.ac.th\",\n  \"displayName\": \"Phachara1234\",\n  \"password\": \"12345678\"\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n  \"studentId\": \"666776766767\",\n  \"email\": \"test66676@student.chula.ac.th\",\n  \"displayName\": \"Phachara1234\",\n  \"password\": \"12345678\"\n}\n"
 						},
 						"url": {
 							"raw": "{{URL}}/auth/register",
@@ -62,21 +65,13 @@
 					"name": "Login",
 					"event": [
 						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [""],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
-						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)"
+									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)",
+									"pm.environment.set(\"REFRESH_TOKEN\", pm.response.json().refreshToken)"
 								],
-								"type": "text/javascript",
-								"packages": {}
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -85,15 +80,15 @@
 							"type": "noauth"
 						},
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"test66676@student.chula.ac.th\",\n//   \"email\": \"test2@student.chula.ac.th\",\n//   \"email\": \"test1@student.chula.ac.th\",\n  \"password\": \"12345678\"\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n  \"email\": \"test66676@student.chula.ac.th\",\n  \"password\": \"12345678\"\n}\n"
 						},
 						"url": {
 							"raw": "{{URL}}/auth/login",
@@ -104,90 +99,21 @@
 					"response": []
 				},
 				{
-					"name": "Logout",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [""],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbW8weG0yOHcwMDAwZXVob3B6N3VlN3ptIiwiZW1haWwiOiJ0ZXN0NjY2NzZAc3R1ZGVudC5jaHVsYS5hYy50aCIsImlhdCI6MTc3NjMxMTE4MiwiZXhwIjoxNzc2MzEyMDgyfQ.hcUx29K-peu94lNm8t3deDUu-PIrEP8bWSOYkc-ukis\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{URL}}/auth/logout",
-							"host": ["{{URL}}"],
-							"path": ["auth", "logout"]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Refresh Token",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [""],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.environment.set(\"TOKEN\", pm.response.json().accessToken)"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
 					"request": {
 						"auth": {
 							"type": "noauth"
 						},
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbW8weG0yOHcwMDAwZXVob3B6N3VlN3ptIiwiZW1haWwiOiJ0ZXN0NjY2NzZAc3R1ZGVudC5jaHVsYS5hYy50aCIsImlhdCI6MTc3NjMxMDg1NSwiZXhwIjoxNzc2OTE1NjU1fQ.0KIt3CPerQF4P_cdAWny53m8gQtWEItFsKcAJUkTr90\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n  \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n}\n"
 						},
 						"url": {
 							"raw": "{{URL}}/auth/refresh",
@@ -198,28 +124,37 @@
 					"response": []
 				},
 				{
-					"name": "Get Me",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [""],
-								"type": "text/javascript",
-								"packages": {}
-							}
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "noauth"
 						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [""],
-								"type": "text/javascript",
-								"packages": {}
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
 							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n}\n"
+						},
+						"url": {
+							"raw": "{{URL}}/auth/logout",
+							"host": ["{{URL}}"],
+							"path": ["auth", "logout"]
 						}
-					],
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
 					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get Me",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -232,27 +167,38 @@
 							]
 						},
 						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/users/me",
+							"host": ["{{URL}}"],
+							"path": ["users", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
 						"header": [
 							{
 								"key": "Content-Type",
-								"value": "application/json",
-								"description": "JSON Type",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YjYwMmZmMjY4MDE0NzAxNGM2MzkyNyIsImlhdCI6MTczOTk4MjgzMCwiZXhwIjoxNzQyNTc0ODMwfQ.y3L9ko8Tc1C20ztBg0aw4Oqad2wyGpBona5fE8pg6vg",
-								"type": "text"
+								"value": "application/json"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n  \"displayName\": \"Phachara Updated\",\n  \"lineId\": \"line-123\",\n  \"instagram\": \"cedt.market\",\n  \"facebookUrl\": \"https://facebook.com/cedt.market\"\n}\n"
 						},
 						"url": {
 							"raw": "{{URL}}/users/me",
@@ -265,7 +211,7 @@
 			]
 		},
 		{
-			"name": "Listing",
+			"name": "Listings",
 			"item": [
 				{
 					"name": "Get listings",
@@ -284,6 +230,32 @@
 					"response": []
 				},
 				{
+					"name": "Search listings",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/listings/search?status=AVAILABLE&search=robot",
+							"host": ["{{URL}}"],
+							"path": ["listings", "search"],
+							"query": [
+								{
+									"key": "status",
+									"value": "AVAILABLE"
+								},
+								{
+									"key": "search",
+									"value": "robot"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get single listing",
 					"request": {
 						"auth": {
@@ -292,9 +264,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{URL}}/listings/cmo0ztpvc0005eucp5sz8ktxd",
+							"raw": "{{URL}}/listings/{{LISTING_ID}}",
 							"host": ["{{URL}}"],
-							"path": ["listings", "cmo0ztpvc0005eucp5sz8ktxd"]
+							"path": ["listings", "{{LISTING_ID}}"]
 						}
 					},
 					"response": []
@@ -313,15 +285,15 @@
 							]
 						},
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "raw",
-							"raw": "// {\n//   \"title\": \"Robotics Starter Kit มือสอง\",\n//   \"description\": \"ชุดหุ่นยนต์ครบเซต มอเตอร์พร้อมล้อ ใช้งานได้ปกติทุกอย่าง\",\n//   \"price\": 850,\n//   \"isFree\": false,\n//   \"courseCode\": \"2110316\",\n//   \"categoryId\": \"cmo0yf3rc0002eu2o2xfu4k9b\",\n//   \"pickupLocationId\": \"cmo0yf4810004eu2o9f4054uf\",\n//   \"images\": [\n//     \"https://example.com/robot-kit.jpg\"\n//   ]\n// }\n\n// {\n//   \"title\": \"ESP32-WROOM-32D พร้อมสาย Micro USB\",\n//   \"description\": \"ซื้อมาทำโปรเจกต์วิชา Digital Tech ครั้งเดียว สภาพนางฟ้า ไม่เคยเสียบไฟเกิน\",\n//   \"price\": 120,\n//   \"isFree\": false,\n//   \"courseCode\": \"2110201\",\n//   \"categoryId\": \"cmo0yf3850000eu2owqz5vybd\",\n//   \"pickupLocationId\": \"cmo0yf4c50005eu2oxf6892js\",\n//   \"images\": [\n//     \"https://example.com/esp32-1.jpg\",\n//     \"https://example.com/esp32-2.jpg\"\n//   ]\n// }\n\n// {\n//   \"title\": \"เซตเซนเซอร์ Ultrasonic (HC-SR04) 5 ตัว\",\n//   \"description\": \"เหมาหมด 100 บาท ทดสอบแล้วใช้งานได้ปกติทุกตัว เอาไปทำหุ่นยนต์เดินตามเส้นได้\",\n//   \"price\": 100,\n//   \"isFree\": false,\n//   \"courseCode\": \"2110316\",\n//   \"categoryId\": \"cmo0yf3ki0001eu2ohx0jgr43\",\n//   \"pickupLocationId\": \"cmo0yf4810004eu2o9f4054uf\",\n//   \"images\": [\n//     \"https://example.com/ultrasonic.png\"\n//   ]\n// }\n\n{\n  \"title\": \"[แจกฟรี] หนังสือ Engineering Mathematics 1\",\n  \"description\": \"สภาพ 80% มีรอยจดสรุปภาษาไทยนิดหน่อย เผื่อรุ่นน้องคนไหนหาอยู่มาเอาได้เลยครับ\",\n  \"price\": 0,\n  \"isFree\": true,\n  \"courseCode\": \"2110101\",\n  \"categoryId\": \"cmo0yf3rc0002eu2o2xfu4k9b\",\n  \"pickupLocationId\": \"cmo0yf4c50005eu2oxf6892js\",\n  \"images\": [\n    \"https://example.com/calculus-book.jpg\"\n  ]\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n  \"title\": \"[Free] Engineering Mathematics 1\",\n  \"description\": \"Condition 80%, some notes included\",\n  \"price\": 0,\n  \"isFree\": true,\n  \"courseCode\": \"2110101\",\n  \"categoryId\": \"{{CATEGORY_ID}}\",\n  \"pickupLocationId\": \"{{PICKUP_LOCATION_ID}}\",\n  \"images\": [\n    \"https://example.com/calculus-book.jpg\"\n  ]\n}\n"
 						},
 						"url": {
 							"raw": "{{URL}}/listings",
@@ -345,20 +317,47 @@
 							]
 						},
 						"method": "PATCH",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"status\": \"SOLD\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n  \"status\": \"RESERVED\",\n  \"buyerId\": \"{{BUYER_ID}}\"\n}\n"
 						},
 						"url": {
-							"raw": "{{URL}}/listings/cmo10e3qh0007eumsdfbufjuo",
+							"raw": "{{URL}}/listings/{{LISTING_ID}}",
 							"host": ["{{URL}}"],
-							"path": ["listings", "cmo10e3qh0007eumsdfbufjuo"]
+							"path": ["listings", "{{LISTING_ID}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm received",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/listings/{{LISTING_ID}}/confirm-received",
+							"host": ["{{URL}}"],
+							"path": [
+								"listings",
+								"{{LISTING_ID}}",
+								"confirm-received"
+							]
 						}
 					},
 					"response": []
@@ -378,46 +377,10 @@
 						},
 						"method": "DELETE",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
-							"raw": "{{URL}}/listings/cmo10dwof0005eumsn25fk59n",
+							"raw": "{{URL}}/listings/{{LISTING_ID}}",
 							"host": ["{{URL}}"],
-							"path": ["listings", "cmo10dwof0005eumsn25fk59n"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "searching and filter",
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{URL}}/listings/search?status=AVAILABLE",
-							"host": ["{{URL}}"],
-							"path": ["listings", "search"],
-							"query": [
-								{
-									"key": "status",
-									"value": "AVAILABLE"
-								},
-								{
-									"key": "search",
-									"value": "",
-									"disabled": true
-								}
-							]
+							"path": ["listings", "{{LISTING_ID}}"]
 						}
 					},
 					"response": []
@@ -425,7 +388,7 @@
 			]
 		},
 		{
-			"name": "categories",
+			"name": "Categories",
 			"item": [
 				{
 					"name": "Get Categories",
@@ -446,10 +409,10 @@
 			]
 		},
 		{
-			"name": "Pickup-locations",
+			"name": "Pickup Locations",
 			"item": [
 				{
-					"name": "Get List pickup spots",
+					"name": "Get Pickup Locations",
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -460,6 +423,308 @@
 							"raw": "{{URL}}/pickup-locations",
 							"host": ["{{URL}}"],
 							"path": ["pickup-locations"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cart",
+			"item": [
+				{
+					"name": "Get cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/cart",
+							"host": ["{{URL}}"],
+							"path": ["cart"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add cart item",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"listingId\": \"{{LISTING_ID}}\"\n}\n"
+						},
+						"url": {
+							"raw": "{{URL}}/cart/items",
+							"host": ["{{URL}}"],
+							"path": ["cart", "items"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove cart item",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/cart/items/{{LISTING_ID}}",
+							"host": ["{{URL}}"],
+							"path": ["cart", "items", "{{LISTING_ID}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Clear cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/cart/clear",
+							"host": ["{{URL}}"],
+							"path": ["cart", "clear"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Chat",
+			"item": [
+				{
+					"name": "Get chat rooms",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/chat/rooms",
+							"host": ["{{URL}}"],
+							"path": ["chat", "rooms"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create chat room",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"listingId\": \"{{LISTING_ID}}\"\n}\n"
+						},
+						"url": {
+							"raw": "{{URL}}/chat/rooms",
+							"host": ["{{URL}}"],
+							"path": ["chat", "rooms"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get chat messages",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/chat/rooms/{{ROOM_ID}}/messages",
+							"host": ["{{URL}}"],
+							"path": ["chat", "rooms", "{{ROOM_ID}}", "messages"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send chat message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Hello, is this still available?\"\n}\n"
+						},
+						"url": {
+							"raw": "{{URL}}/chat/rooms/{{ROOM_ID}}/messages",
+							"host": ["{{URL}}"],
+							"path": ["chat", "rooms", "{{ROOM_ID}}", "messages"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reviews",
+			"item": [
+				{
+					"name": "Get reviews by listing",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/reviews?listingId={{LISTING_ID}}",
+							"host": ["{{URL}}"],
+							"path": ["reviews"],
+							"query": [
+								{
+									"key": "listingId",
+									"value": "{{LISTING_ID}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get reviews by seller",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/reviews?sellerId={{SELLER_ID}}",
+							"host": ["{{URL}}"],
+							"path": ["reviews"],
+							"query": [
+								{
+									"key": "sellerId",
+									"value": "{{SELLER_ID}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"listingId\": \"{{LISTING_ID}}\",\n  \"rating\": 5,\n  \"comment\": \"Great seller, smooth transaction.\"\n}\n"
+						},
+						"url": {
+							"raw": "{{URL}}/reviews",
+							"host": ["{{URL}}"],
+							"path": ["reviews"]
 						}
 					},
 					"response": []

@@ -17,8 +17,8 @@ interface AuthResult {
 	};
 }
 
-const extractUsernameFromEmail = (email: string): string => {
-	return email.split("@")[0];
+const isStudentEmail = (email: string): boolean => {
+	return email.toLowerCase().endsWith(`@${env.STUDENT_EMAIL_DOMAIN.toLowerCase()}`);
 };
 
 const issueTokens = async (
@@ -43,6 +43,10 @@ const issueTokens = async (
 
 export const authService = {
 	async register(input: RegisterInput): Promise<AuthResult> {
+		if (!isStudentEmail(input.email)) {
+			throw new ApiError("Email must be a university student account", 400);
+		}
+
 		const existingUser = await prisma.user.findUnique({
 			where: { email: input.email },
 		});
@@ -76,40 +80,33 @@ export const authService = {
 	},
 
 	async login(input: LoginInput): Promise<AuthResult> {
+		if (!isStudentEmail(input.email)) {
+			throw new ApiError("Email must be a university student account", 400);
+		}
+
 		const existingUser = await prisma.user.findUnique({
 			where: { email: input.email },
 		});
 
-		let user = existingUser;
-
-		if (!user) {
-			const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_SALT_ROUNDS);
-
-			user = await prisma.user.create({
-				data: {
-					email: input.email,
-					displayName: extractUsernameFromEmail(input.email),
-					studentId: extractUsernameFromEmail(input.email),
-					passwordHash,
-				},
-			});
+		if (!existingUser) {
+			throw new ApiError("Invalid credentials", 401);
 		}
 
-		const passwordMatches = await bcrypt.compare(input.password, user.passwordHash);
+		const passwordMatches = await bcrypt.compare(input.password, existingUser.passwordHash);
 
 		if (!passwordMatches) {
 			throw new ApiError("Invalid credentials", 401);
 		}
 
-		const tokens = await issueTokens(user.id, user.email);
+		const tokens = await issueTokens(existingUser.id, existingUser.email);
 
 		return {
 			...tokens,
 			user: {
-				id: user.id,
-				email: user.email,
-				displayName: user.displayName,
-				studentId: user.studentId,
+				id: existingUser.id,
+				email: existingUser.email,
+				displayName: existingUser.displayName,
+				studentId: existingUser.studentId,
 			},
 		};
 	},
