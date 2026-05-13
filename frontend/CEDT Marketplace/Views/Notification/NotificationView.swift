@@ -22,11 +22,15 @@ struct NotificationView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.systemGray6))
                 }
             }
+            .background(Color(.systemGray6))
             .navigationTitle("Notifications")
             .task { await viewModel.loadNotifications() }
         }
+        .background(Color(.systemGray6))
     }
 }
 

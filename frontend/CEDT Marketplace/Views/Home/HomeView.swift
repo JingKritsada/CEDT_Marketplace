@@ -2,9 +2,12 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+
     @State private var showFilters = false
     @State private var categories: [Category] = []
     @State private var selectedCategoryId: String? = nil
+    @State private var categoriesLoadFailed = false
+
     private let categoryService = CategoryService()
     private let gridColumns = [
         GridItem(.flexible(), spacing: 16),
@@ -35,12 +38,14 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
             }
-			.safeAreaInset(edge: .top) {
-				searchBar()
-					.padding(.horizontal, 16)
-					.padding(.vertical, 10)
-					.background(Color.white)
-			}
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGray6))
+            .safeAreaInset(edge: .top) {
+                searchBar()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+            }
             .sheet(isPresented: $showFilters) {
                 FilterModalView(activeQuery: $viewModel.activeQuery)
             }
@@ -52,8 +57,10 @@ struct HomeView: View {
                 selectedCategoryId = viewModel.activeQuery?.categoryId
                 do {
                     categories = try await categoryService.fetchCategories()
+                    categoriesLoadFailed = false
                 } catch {
                     categories = []
+                    categoriesLoadFailed = true
                 }
                 await viewModel.loadListings()
             }
@@ -82,51 +89,53 @@ struct HomeView: View {
     }
 
     private func searchBar() -> some View {
-		VStack(alignment: .leading, spacing: 12) {
-			HStack(spacing: 12) {
-				HStack(spacing: 8) {
-					Image(systemName: "magnifyingglass")
-						.font(.system(size: 18, weight: .semibold))
-						.foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.secondary)
 
-					TextField("Search components...", text: $viewModel.searchText)
-						.submitLabel(.search)
-						.onSubmit {
-							Task { await viewModel.searchListings() }
-						}
-				}
-				.padding(.horizontal, 12)
-				.padding(.vertical, 10)
-				.background(Color(.systemGray6))
-				.cornerRadius(12)
+                    TextField("Search components...", text: $viewModel.searchText)
+                        .submitLabel(.search)
+                        .onSubmit {
+                            Task { await viewModel.searchListings() }
+                        }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
 
-				Button {
-					showFilters = true
-				} label: {
-					Image(systemName: "slider.horizontal.3")
-						.font(.system(size: 18, weight: .semibold))
-						.foregroundColor(.secondary)
-						.frame(width: 44, height: 44)
-						.background(Color(.systemGray6))
-						.cornerRadius(12)
-				}
-			}
+                Button {
+                    showFilters = true
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 44, height: 44)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                }
+            }
 
-			ScrollView(.horizontal, showsIndicators: false) {
-				HStack(spacing: 8) {
-					categoryChip(title: "All Items", isSelected: selectedCategoryId == nil) {
-						updateCategoryFilter(nil)
-					}
-					ForEach(categories) { category in
-						categoryChip(title: category.name, isSelected: selectedCategoryId == category.id) {
-							updateCategoryFilter(category.id)
-						}
-					}
-				}
-				.padding(.vertical, 4)
-			}
-		}
-	}
+            if !categoriesLoadFailed {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        categoryChip(title: "All Items", isSelected: selectedCategoryId == nil) {
+                            updateCategoryFilter(nil)
+                        }
+                        ForEach(categories) { category in
+                            categoryChip(title: category.name, isSelected: selectedCategoryId == category.id) {
+                                updateCategoryFilter(category.id)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
 }
 
 #Preview {

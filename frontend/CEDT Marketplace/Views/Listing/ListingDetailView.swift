@@ -3,89 +3,58 @@ import SwiftUI
 
 struct ListingDetailView: View {
     let listingId: String
+
     @StateObject private var viewModel = ListingDetailViewModel()
     @State private var showError = false
+    @State private var showCheckout = false
 
     var body: some View {
-        ScrollView {
-            if let listing = viewModel.listing {
-                VStack(alignment: .leading, spacing: 16) {
-                    if !listing.images.isEmpty {
-                        ImageCarousel(imageUrls: listing.images)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(listing.title)
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Text(listing.isFree ? "Free" : "THB \(listing.price)")
-                            .font(.headline)
-                        StatusBadge(status: listing.status)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Description")
-                            .font(.headline)
-                        Text(listing.description)
-                            .font(.body)
-                    }
-
-                    if let seller = listing.seller {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Seller")
-                                .font(.headline)
-                            Text(seller.displayName)
-                                .font(.subheadline)
-                        }
-                    }
-
-                    if let location = listing.pickupLocation {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Pickup Location")
-                                .font(.headline)
-                            Text("\(location.name) - \(location.building)")
-                                .font(.subheadline)
-                        }
-                    }
-
-                    if let reviews = listing.reviews, !reviews.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Reviews")
-                                .font(.headline)
-                            ForEach(reviews) { review in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    RatingStarsView(rating: Double(review.rating))
-                                    if let comment = review.comment {
-                                        Text(comment)
-                                            .font(.subheadline)
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                    }
-
-                    VStack(spacing: 12) {
-                        PrimaryButton(title: "Add to Cart", action: {
-                            Task { await viewModel.addToCart() }
-                        })
-
-                        if listing.status == .waitingForPickup || listing.status == .sent {
-                            PrimaryButton(title: "Confirm Received", action: {
-                                Task { await viewModel.confirmReceived() }
-                            })
-                        }
-                    }
-                }
-                .padding()
-            } else if viewModel.isLoading {
-                ProgressView()
-                    .padding()
-            } else {
-                EmptyStateView(title: "Listing not found", message: "Please try again later.")
-            }
-        }
+		ScrollView {
+			
+		}
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGray6))
         .navigationTitle("Details")
+        .navigationDestination(isPresented: $showCheckout) {
+            CheckoutView()
+        }
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom) {
+			HStack(spacing: 12) {
+				Button {
+					Task { await viewModel.addToCart() }
+				} label: {
+					Image(systemName: "cart.badge.plus")
+						.font(.title3.weight(.semibold))
+						.foregroundColor(.accentPrimary)
+						.padding(8)
+				}
+				.buttonStyle(.bordered)
+				.tint(.accentPrimary)
+				.font(.title3.weight(.semibold))
+
+				PrimaryButton(
+					title: "Purchase",
+					action: {
+						Task {
+							await viewModel.addToCart()
+							if viewModel.errorMessage == nil {
+								showCheckout = true
+							}
+						}
+					},
+					paddingSize: 8,
+					isLoading: viewModel.isLoading
+				)
+				.font(.title3.weight(.semibold))
+				.frame(maxWidth: .infinity)
+			}
+			.padding(.horizontal, 22)
+			.padding(.top, 12)
+			.padding(.bottom, 16)
+			.background(Color.white)
+        }
         .task {
             await viewModel.loadListing(id: listingId)
         }
@@ -102,6 +71,6 @@ struct ListingDetailView: View {
 
 #Preview {
     NavigationStack {
-        ListingDetailView(listingId: "listing-1")
+        ListingDetailView(listingId: "cmofv0j05001peud5ftv45k30")
     }
 }

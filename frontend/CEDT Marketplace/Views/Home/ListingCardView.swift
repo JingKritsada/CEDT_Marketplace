@@ -4,34 +4,93 @@ struct ListingCardView: View {
     let listing: Listing
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let firstImage = listing.images.first, let url = URL(string: firstImage) {
-                AsyncImage(url: url) { phase in
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack(alignment: .topLeading) {
+                AsyncImage(url: URL(string: listing.images.first ?? "")) { phase in
                     switch phase {
+                    case .empty:
+                        ZStack {
+                            Color.gray.opacity(0.2)
+
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(.gray)
+                                .scaleEffect(1.5)
+                        }
+                        .aspectRatio(1, contentMode: .fill)
+
+                    case .failure:
+                        ZStack {
+                            Color.gray.opacity(0.2)
+
+                            VStack(spacing: 6) {
+                                Image(systemName: "photo")
+                                    .padding(.top, 18)
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.pink.opacity(0.6))
+                                Text("No Image")
+                                    .font(.caption2)
+                                    .foregroundColor(.pink.opacity(0.6))
+                            }
+                        }
+                        .aspectRatio(1, contentMode: .fill)
+
                     case let .success(image):
                         image
                             .resizable()
-                            .scaledToFill()
-                    case .failure:
-                        Color.gray.opacity(0.2)
-                    case .empty:
-                        ProgressView()
+                            .aspectRatio(1, contentMode: .fill)
+
                     @unknown default:
-                        Color.gray.opacity(0.2)
+                        Color.gray.opacity(0.1)
+                            .aspectRatio(1, contentMode: .fill)
                     }
                 }
-                .frame(height: 160)
+                .frame(maxWidth: .infinity)
                 .clipped()
-                .cornerRadius(12)
+                .clipShape(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: 15,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: 15
+                    )
+                )
+
+                Text((listing.category?.name ?? "No Category").uppercased())
+                    .font(.system(size: 10, weight: .heavy))
+                    .padding(6)
+                    .background(Color.white.opacity(0.8))
+                    .foregroundColor(.pink)
+                    .cornerRadius(8)
+                    .padding(8)
             }
 
-            Text(listing.title)
-                .font(.headline)
-            Text(listing.isFree ? "Free" : "THB \(listing.price)")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            StatusBadge(status: listing.status)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(listing.title)
+                    .font(.subheadline).bold()
+                    .lineLimit(1)
+                Text(listing.description)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                Spacer()
+                HStack {
+                    Text(listing.isFree ? "฿0" : "฿\(Int(listing.price))")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.pink)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 4)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
         }
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+        .cornerRadius(15)
     }
 }
 

@@ -4,11 +4,16 @@ struct ContentView: View {
     @EnvironmentObject private var session: SessionViewModel
 
     var body: some View {
-        Group {
-            if session.isAuthenticated {
-                MainTabView()
-            } else {
-                OnboardingView()
+        ZStack {
+            Color(.systemGray6)
+                .ignoresSafeArea()
+
+            Group {
+                if session.isAuthenticated {
+                    MainTabView()
+                } else {
+                    OnboardingView()
+                }
             }
         }
     }
@@ -43,6 +48,7 @@ struct MainTabView: View {
                 }
         }
         .tint(.accentPrimary)
+        .background(Color.clear)
     }
 }
 

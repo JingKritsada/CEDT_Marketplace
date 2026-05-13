@@ -69,6 +69,8 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGray6))
             .task {
                 await viewModel.loadProfile()
                 if let profile = viewModel.profile {
@@ -78,6 +80,7 @@ struct ProfileView: View {
                 }
             }
         }
+        .background(Color(.systemGray6))
     }
 }
 

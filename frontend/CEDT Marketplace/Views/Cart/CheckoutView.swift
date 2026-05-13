@@ -25,6 +25,8 @@ struct CheckoutView: View {
             }
         }
         .navigationTitle("Checkout")
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGray6))
         .task {
             do {
                 pickupLocations = try await pickupService.fetchPickupLocations()

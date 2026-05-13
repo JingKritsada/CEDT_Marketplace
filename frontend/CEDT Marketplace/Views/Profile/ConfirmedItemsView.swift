@@ -7,6 +7,7 @@ struct ConfirmedItemsView: View {
         List(listings) { listing in
             ListingRowView(listing: listing)
         }
+        .scrollContentBackground(.hidden)
         .navigationTitle("Confirmed Items")
     }
 }

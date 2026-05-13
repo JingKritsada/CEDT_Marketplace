@@ -7,6 +7,7 @@ struct SoldItemsView: View {
         List(listings) { listing in
             ListingRowView(listing: listing)
         }
+        .scrollContentBackground(.hidden)
         .navigationTitle("Sold Items")
     }
 }

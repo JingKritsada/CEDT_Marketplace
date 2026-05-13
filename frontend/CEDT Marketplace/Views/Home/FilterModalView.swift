@@ -5,6 +5,7 @@ struct FilterModalView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var activeQuery: ListingQuery?
     @StateObject private var viewModel = FilterViewModel()
+
     var body: some View {
         NavigationStack {
             Form {

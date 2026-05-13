@@ -27,10 +27,13 @@ struct CartView: View {
                             CheckoutView()
                         }
                     }
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.systemGray6))
                 } else {
                     EmptyStateView(title: "Cart is empty", message: "Browse listings and add items to cart.")
                 }
             }
+            .background(Color(.systemGray6))
             .navigationTitle("Cart")
             .toolbar {
                 if viewModel.cart != nil {
@@ -41,6 +44,7 @@ struct CartView: View {
             }
             .task { await viewModel.loadCart() }
         }
+        .background(Color(.systemGray6))
     }
 }
 
