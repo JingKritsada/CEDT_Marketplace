@@ -6,55 +6,66 @@ struct ListingCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack(alignment: .topLeading) {
-                AsyncImage(url: URL(string: listing.images.first ?? "")) { phase in
-                    switch phase {
-                    case .empty:
-                        ZStack {
-                            Color.gray.opacity(0.2)
+                if let imageUrl = listing.images.first, !imageUrl.isEmpty, URL(string: imageUrl) != nil {
+                    AsyncImage(url: URL(string: imageUrl)) { phase in
+                        switch phase {
+                        case .empty:
+                            ZStack {
+                                Color.gray.opacity(0.2)
 
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .tint(.gray)
-                                .scaleEffect(1.5)
-                        }
-                        .aspectRatio(1, contentMode: .fill)
-
-                    case .failure:
-                        ZStack {
-                            Color.gray.opacity(0.2)
-
-                            VStack(spacing: 6) {
-                                Image(systemName: "photo")
-                                    .padding(.top, 18)
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.pink.opacity(0.6))
-                                Text("No Image")
-                                    .font(.caption2)
-                                    .foregroundColor(.pink.opacity(0.6))
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.gray)
+                                    .scaleEffect(1.5)
                             }
+                            .aspectRatio(1, contentMode: .fill)
+
+                        case .failure:
+                            ZStack {
+                                Color.gray.opacity(0.2)
+
+                                VStack(spacing: 6) {
+                                    Image(systemName: "photo")
+                                        .padding(.top, 18)
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.pink.opacity(0.6))
+                                    Text("No Image")
+                                        .font(.caption2)
+                                        .foregroundColor(.pink.opacity(0.6))
+                                }
+                            }
+                            .aspectRatio(1, contentMode: .fill)
+
+                        case let .success(image):
+                            image
+                                .resizable()
+                                .aspectRatio(1, contentMode: .fill)
+
+                        @unknown default:
+                            Color.gray.opacity(0.1)
+                                .aspectRatio(1, contentMode: .fill)
                         }
-                        .aspectRatio(1, contentMode: .fill)
-
-                    case let .success(image):
-                        image
-                            .resizable()
-                            .aspectRatio(1, contentMode: .fill)
-
-                    @unknown default:
-                        Color.gray.opacity(0.1)
-                            .aspectRatio(1, contentMode: .fill)
                     }
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                } else {
+                    ZStack {
+                        Color.gray.opacity(0.2)
+
+                        VStack(spacing: 6) {
+                            Image(systemName: "photo")
+                                .padding(.top, 18)
+                                .font(.system(size: 28))
+                                .foregroundColor(.pink.opacity(0.6))
+                            Text("No Image")
+                                .font(.caption2)
+                                .foregroundColor(.pink.opacity(0.6))
+                        }
+                    }
+                    .aspectRatio(1, contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
                 }
-                .frame(maxWidth: .infinity)
-                .clipped()
-                .clipShape(
-                    UnevenRoundedRectangle(
-                        topLeadingRadius: 15,
-                        bottomLeadingRadius: 0,
-                        bottomTrailingRadius: 0,
-                        topTrailingRadius: 15
-                    )
-                )
 
                 Text((listing.category?.name ?? "No Category").uppercased())
                     .font(.system(size: 10, weight: .heavy))
