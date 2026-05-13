@@ -17,7 +17,7 @@ final class FilterViewModel: ObservableObject {
             isFree: isFree,
             minPrice: Int(minPrice),
             maxPrice: Int(maxPrice),
-            status: status,
+            status: status ?? .available,
             search: nil
         )
     }

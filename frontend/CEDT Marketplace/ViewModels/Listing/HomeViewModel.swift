@@ -7,7 +7,7 @@ final class HomeViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var searchText = ""
-    @Published var activeQuery: ListingQuery?
+    @Published var activeQuery: ListingQuery? = ListingQuery(status: .available)
 
     private let listingService: ListingService
 
@@ -29,7 +29,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func searchListings() async {
-        var query = activeQuery ?? ListingQuery()
+        var query = activeQuery ?? ListingQuery(status: .available)
         query.search = searchText.isEmpty ? nil : searchText
         activeQuery = query
         await loadListings()

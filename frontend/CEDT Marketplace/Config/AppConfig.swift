@@ -7,6 +7,7 @@ enum AppConfig {
         }
         return url
     }()
+
     static let studentEmailDomain = "student.chula.ac.th"
     static let appName = "CEDT Community Marketplace"
 }

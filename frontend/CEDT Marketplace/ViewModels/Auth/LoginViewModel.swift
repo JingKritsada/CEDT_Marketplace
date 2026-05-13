@@ -48,7 +48,7 @@ final class LoginViewModel: ObservableObject {
             errorMessage = "Password must be at least 8 characters."
             return false
         }
-		
+
         return true
     }
 }

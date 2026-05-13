@@ -70,17 +70,17 @@ struct LoginView: View {
                 .padding(.vertical, 14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(Color(.systemGray6)))
 
-				// Error
-				if let errorMessage = viewModel.errorMessage {
-					HStack(alignment: .top, spacing: 8) {
-						Image(systemName: "exclamationmark.circle.fill")
-							.foregroundColor(.red)
+                // Error
+                if let errorMessage = viewModel.errorMessage {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundColor(.red)
 
-						Text(errorMessage)
-							.font(.subheadline)
-							.foregroundColor(.red)
-					}
-				}
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                }
             }
             Spacer()
 

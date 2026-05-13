@@ -76,7 +76,7 @@ final class RegisterViewModel: ObservableObject {
             errorMessage = "Passwords do not match."
             return false
         }
-		
+
         return true
     }
 }
