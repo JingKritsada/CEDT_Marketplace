@@ -1,7 +1,12 @@
 import Foundation
 
 enum AppConfig {
-    static let baseURL = URL(string: "http://localhost:3003")!
+    static let baseURL: URL = {
+        guard let url = URL(string: "http://localhost:3003") else {
+            preconditionFailure("Invalid base URL in AppConfig.")
+        }
+        return url
+    }()
     static let studentEmailDomain = "student.chula.ac.th"
     static let appName = "CEDT Community Marketplace"
 }

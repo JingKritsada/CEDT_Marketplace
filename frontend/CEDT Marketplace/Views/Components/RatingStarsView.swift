@@ -13,8 +13,7 @@ struct RatingStarsView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sizeThatFitsLayout) {
     RatingStarsView(rating: 4.5)
         .padding()
-        .previewLayout(.sizeThatFits)
 }

@@ -11,7 +11,7 @@ struct RegisterView: View {
 	@State private var isConfirmPasswordVisible = false
 
     var body: some View {
-		VStack(spacing: 48) {
+		VStack(spacing: 36) {
 
 			// Header
 			VStack(spacing: 20) {
@@ -19,7 +19,7 @@ struct RegisterView: View {
 					.font(.system(size: 24))
 					.foregroundColor(.white)
 					.padding(18)
-					.background(Circle().fill(Color(red: 0.78, green: 0.06, blue: 0.36)))
+					.background(Circle().fill(Color(.pink)))
 					.shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 6)
 
 				VStack(spacing: 4) {
@@ -34,9 +34,8 @@ struct RegisterView: View {
 			}
 			.frame(maxWidth: .infinity)
 
-
 			// Form
-			VStack(spacing: 12) {
+			VStack(alignment: .leading, spacing: 12) {
 				HStack(spacing: 12) {
 					Image(systemName: "person")
 						.foregroundColor(.secondary)
@@ -74,6 +73,9 @@ struct RegisterView: View {
 				.padding(.horizontal, 16)
 				.padding(.vertical, 14)
 				.background(RoundedRectangle(cornerRadius: 14).fill(Color(.systemGray6)))
+
+				Divider()
+					.padding(.vertical, 8)
 
 				HStack(spacing: 12) {
 					Image(systemName: "lock")
@@ -120,14 +122,18 @@ struct RegisterView: View {
 				.padding(.horizontal, 16)
 				.padding(.vertical, 14)
 				.background(RoundedRectangle(cornerRadius: 14).fill(Color(.systemGray6)))
-			}
 
-			// Error
-			if let errorMessage = viewModel.errorMessage {
-				Text(errorMessage)
-					.font(.footnote)
-					.foregroundColor(.red)
-					.frame(maxWidth: .infinity, alignment: .leading)
+				// Error
+				if let errorMessage = viewModel.errorMessage {
+					HStack(alignment: .top, spacing: 8) {
+						Image(systemName: "exclamationmark.circle.fill")
+							.foregroundColor(.red)
+
+						Text(errorMessage)
+							.font(.subheadline)
+							.foregroundColor(.red)
+					}
+				}
 			}
 
 			Spacer()
@@ -153,7 +159,7 @@ struct RegisterView: View {
 						LoginView()
 					}
 					.font(.subheadline.weight(.semibold))
-					.foregroundColor(Color(red: 0.78, green: 0.06, blue: 0.36))
+					.foregroundColor(Color(.pink))
 				}
 			}
 		}

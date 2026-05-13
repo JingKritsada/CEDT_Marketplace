@@ -35,7 +35,7 @@ struct ListingCardView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sizeThatFitsLayout) {
     let listing = Listing(
         id: "listing-1",
         sellerId: "seller-1",
@@ -61,5 +61,4 @@ struct ListingCardView: View {
 
     return ListingCardView(listing: listing)
         .padding()
-        .previewLayout(.sizeThatFits)
 }

@@ -27,8 +27,7 @@ struct StatusBadge: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sizeThatFitsLayout) {
     StatusBadge(status: .available)
         .padding()
-        .previewLayout(.sizeThatFits)
 }

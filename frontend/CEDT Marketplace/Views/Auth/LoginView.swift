@@ -33,7 +33,7 @@ struct LoginView: View {
             .frame(maxWidth: .infinity)
 
             // Form
-            VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     Image(systemName: "envelope")
                         .foregroundColor(.secondary)
@@ -69,16 +69,19 @@ struct LoginView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(Color(.systemGray6)))
-            }
 
-            // Error
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundColor(.red)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+				// Error
+				if let errorMessage = viewModel.errorMessage {
+					HStack(alignment: .top, spacing: 8) {
+						Image(systemName: "exclamationmark.circle.fill")
+							.foregroundColor(.red)
 
+						Text(errorMessage)
+							.font(.subheadline)
+							.foregroundColor(.red)
+					}
+				}
+            }
             Spacer()
 
             VStack(spacing: 18) {

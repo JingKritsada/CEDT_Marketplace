@@ -40,26 +40,43 @@ final class RegisterViewModel: ObservableObject {
     }
 
     private func validateInputs() -> Bool {
-        if studentId.trimmingCharacters(in: .whitespaces).isEmpty {
+        guard !displayName.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "Full name is required."
+            return false
+        }
+        guard !studentId.trimmingCharacters(in: .whitespaces).isEmpty else {
             errorMessage = "Student ID is required."
             return false
         }
-        if displayName.trimmingCharacters(in: .whitespaces).isEmpty {
-            errorMessage = "Display name is required."
+        guard studentId.count == 10, studentId.allSatisfy({ $0.isNumber }) else {
+            errorMessage = "Student ID must be 10 digits."
             return false
         }
-        if !email.lowercased().hasSuffix("@\(AppConfig.studentEmailDomain)") {
-            errorMessage = "Use your university email."
+        guard !email.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "University email is required."
             return false
         }
-        if password.count < 8 {
+        guard email.lowercased().hasSuffix("@\(AppConfig.studentEmailDomain)") else {
+            errorMessage = "Use university email (\(AppConfig.studentEmailDomain))."
+            return false
+        }
+        guard !password.isEmpty else {
+            errorMessage = "Password is required."
+            return false
+        }
+        guard password.count >= 8 else {
             errorMessage = "Password must be at least 8 characters."
             return false
         }
-        if password != confirmPassword {
+        guard !confirmPassword.isEmpty else {
+            errorMessage = "Please confirm your password."
+            return false
+        }
+        guard password == confirmPassword else {
             errorMessage = "Passwords do not match."
             return false
         }
+		
         return true
     }
 }

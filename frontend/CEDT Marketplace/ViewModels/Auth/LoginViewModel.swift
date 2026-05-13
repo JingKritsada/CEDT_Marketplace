@@ -33,17 +33,22 @@ final class LoginViewModel: ObservableObject {
 
     private func validateInputs() -> Bool {
         guard !email.trimmingCharacters(in: .whitespaces).isEmpty else {
-            errorMessage = "Email is required."
+            errorMessage = "University email is required."
             return false
         }
         guard email.lowercased().hasSuffix("@\(AppConfig.studentEmailDomain)") else {
-            errorMessage = "Use your university email."
+            errorMessage = "Use university email (\(AppConfig.studentEmailDomain))."
+            return false
+        }
+        guard !password.isEmpty else {
+            errorMessage = "Password is required."
             return false
         }
         guard password.count >= 8 else {
             errorMessage = "Password must be at least 8 characters."
             return false
         }
+		
         return true
     }
 }

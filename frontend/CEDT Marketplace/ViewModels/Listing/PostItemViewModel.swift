@@ -75,23 +75,23 @@ final class PostItemViewModel: ObservableObject {
     }
 
     private func validateInputs() -> Bool {
-        if title.trimmingCharacters(in: .whitespaces).isEmpty {
+        guard !title.trimmingCharacters(in: .whitespaces).isEmpty else {
             errorMessage = "Title is required."
             return false
         }
-        if description.trimmingCharacters(in: .whitespaces).isEmpty {
+        guard !description.trimmingCharacters(in: .whitespaces).isEmpty else {
             errorMessage = "Description is required."
             return false
         }
-        if !isFree, Int(price) == nil {
+        guard isFree || Int(price) != nil else {
             errorMessage = "Enter a valid price."
             return false
         }
-        if selectedCategoryId == nil {
+        guard selectedCategoryId != nil else {
             errorMessage = "Select a category."
             return false
         }
-        if selectedPickupLocationId == nil {
+        guard selectedPickupLocationId != nil else {
             errorMessage = "Select a pickup location."
             return false
         }
