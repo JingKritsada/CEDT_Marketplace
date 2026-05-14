@@ -28,10 +28,10 @@ struct ListingCardView: View {
                                     Image(systemName: "link")
                                         .padding(.top, 18)
                                         .font(.system(size: 28))
-                                        .foregroundColor(.pink.opacity(0.6))
+										.foregroundColor(.gray)
                                     Text("Invalid URL")
                                         .font(.caption)
-                                        .foregroundColor(.pink.opacity(0.6))
+										.foregroundColor(.gray)
                                 }
                             }
                             .aspectRatio(1, contentMode: .fill)
@@ -56,10 +56,10 @@ struct ListingCardView: View {
                             Image(systemName: "photo")
                                 .padding(.top, 18)
                                 .font(.system(size: 28))
-                                .foregroundColor(.pink.opacity(0.6))
+								.foregroundColor(.gray)
                             Text("No Image")
                                 .font(.caption)
-                                .foregroundColor(.pink.opacity(0.6))
+								.foregroundColor(.gray)
                         }
                     }
                     .aspectRatio(1, contentMode: .fill)
