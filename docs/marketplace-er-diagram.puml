@@ -1,0 +1,152 @@
+@startuml marketplace-er-diagram
+!define ENTITY_COLOR #FFE4E1
+!define RELATIONSHIP_COLOR #E1F5FF
+
+entity "User" as user {
+  *id : UUID
+  --
+  email : String
+  password_hash : String
+  full_name : String
+  student_id : String
+  created_at : DateTime
+  updated_at : DateTime
+}
+
+entity "SellerProfile" as seller {
+  *id : UUID
+  user_id : UUID <<FK>>
+  --
+  stripe_connect_account_id : String
+  connect_status : Enum [PENDING, ACTIVE, RESTRICTED]
+  charges_enabled : Boolean
+  payouts_enabled : Boolean
+  identity_verified : Boolean
+  bank_verified : Boolean
+  created_at : DateTime
+  updated_at : DateTime
+}
+
+entity "Listing" as listing {
+  *id : UUID
+  seller_id : UUID <<FK>>
+  --
+  name : String
+  description : String
+  category_id : UUID <<FK>>
+  price : Integer
+  status : Enum [AVAILABLE, SOLD, ARCHIVED]
+  condition : String
+  images : Array
+  created_at : DateTime
+  updated_at : DateTime
+}
+
+entity "Payment" as payment {
+  *id : UUID
+  buyer_id : UUID <<FK>>
+  listing_id : UUID <<FK>>
+  seller_id : UUID <<FK>>
+  --
+  stripe_payment_intent_id : String
+  amount : Integer
+  platform_fee : Integer
+  seller_amount : Integer
+  status : Enum [PENDING, SUCCEEDED, FAILED, REFUNDED]
+  payment_method : String
+  created_at : DateTime
+  completed_at : DateTime
+}
+
+entity "PayoutLedger" as payout_ledger {
+  *id : UUID
+  seller_id : UUID <<FK>>
+  --
+  stripe_payout_id : String
+  amount : Integer
+  status : Enum [PENDING, PAID, FAILED]
+  payout_date : DateTime
+  payment_ids : Array
+  created_at : DateTime
+  completed_at : DateTime
+}
+
+entity "SellerBalance" as seller_balance {
+  *id : UUID
+  seller_id : UUID <<FK>>
+  --
+  pending_balance : Integer
+  available_balance : Integer
+  total_earned : Integer
+  last_payout_id : UUID
+  updated_at : DateTime
+}
+
+entity "Category" as category {
+  *id : UUID
+  --
+  name : String
+  description : String
+}
+
+entity "Review" as review {
+  *id : UUID
+  payment_id : UUID <<FK>>
+  reviewer_id : UUID <<FK>>
+  reviewee_id : UUID <<FK>>
+  --
+  rating : Integer
+  comment : String
+  created_at : DateTime
+}
+
+entity "Cart" as cart {
+  *id : UUID
+  user_id : UUID <<FK>>
+  --
+  created_at : DateTime
+  updated_at : DateTime
+}
+
+entity "CartItem" as cart_item {
+  *id : UUID
+  cart_id : UUID <<FK>>
+  listing_id : UUID <<FK>>
+  --
+  quantity : Integer
+  added_at : DateTime
+}
+
+entity "PickupLocation" as pickup {
+  *id : UUID
+  seller_id : UUID <<FK>>
+  --
+  name : String
+  address : String
+  latitude : Float
+  longitude : Float
+}
+
+user ||--o{ seller : "has"
+seller ||--o{ listing : "creates"
+seller ||--o{ pickup : "manages"
+seller ||--o{ payout_ledger : "receives"
+seller ||--o{ seller_balance : "owns"
+
+user ||--o{ cart : "has"
+cart ||--o{ cart_item : "contains"
+cart_item }o--|| listing : "references"
+
+listing }o--|| category : "belongs_to"
+listing ||--o{ payment : "is_subject_of"
+
+user ||--o{ payment : "initiates"
+payment }o--|| seller : "pays_to"
+
+payment ||--o{ review : "generates"
+user ||--o{ review : "writes"
+
+payout_ledger }o--|| user : "belongs_to"
+seller_balance }o--|| seller : "tracks"
+
+@enduml

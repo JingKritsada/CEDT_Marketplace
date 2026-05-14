@@ -1,0 +1,251 @@
+@startuml complete-transaction-dataflow
+!define FRONTEND_COLOR #FFE4E1
+!define BACKEND_COLOR #E1F5FF
+!define STRIPE_COLOR #FFE082
+!define DB_COLOR #C8E6C9
+!define BANK_COLOR #A8D5BA
+
+rectangle "1. Checkout Initiation" as step1 {
+  package "Frontend" as pkg1 <<FRONTEND_COLOR>> {
+    (User selects item) as event1
+    (Taps Buy Now) as event2
+  }
+  
+  package "Backend" as pkg2 <<BACKEND_COLOR>> {
+    (Validate listing) as val1
+    (Check seller status) as val2
+    (Calculate amount) as calc1
+  }
+  
+  package "Database" as pkg3 <<DB_COLOR>> {
+    (Query Listing) as q1
+    (Query Seller) as q2
+    (Query Category) as q3
+  }
+}
+
+rectangle "2. Payment Creation" as step2 {
+  package "Backend" as pkg4 <<BACKEND_COLOR>> {
+    (Create PaymentIntent\nrequest) as stripe_req
+  }
+  
+  package "Stripe" as pkg5 <<STRIPE_COLOR>> {
+    (Create PaymentIntent) as pi_create
+    (Generate clientSecret) as client_secret
+  }
+  
+  package "Backend" as pkg6 <<BACKEND_COLOR>> {
+    (Store pending payment\nrecord) as store_pi
+  }
+  
+  package "Database" as pkg7 <<DB_COLOR>> {
+    (Payment table\nstatus=PENDING) as db_pi
+  }
+}
+
+rectangle "3. Payment Processing" as step3 {
+  package "Frontend" as pkg8 <<FRONTEND_COLOR>> {
+    (Show Stripe UI) as show_ui
+    (User enters card) as enter_card
+    (Confirm payment) as confirm_pay
+  }
+  
+  package "Stripe" as pkg9 <<STRIPE_COLOR>> {
+    (Tokenize card) as tokenize
+    (Authorize charge) as authorize
+    (Create Charge) as create_charge
+  }
+}
+
+rectangle "4. Payment Confirmed" as step4 {
+  package "Stripe" as pkg10 <<STRIPE_COLOR>> {
+    (payment_intent.succeeded\nevent) as event_success
+  }
+  
+  package "Backend Webhook" as pkg11 <<BACKEND_COLOR>> {
+    (Verify signature) as verify_sig
+    (Find payment record) as find_pay
+    (Update status) as update_status
+  }
+  
+  package "Database" as pkg12 <<DB_COLOR>> {
+    (Payment.status = SUCCEEDED) as db_success
+    (Listing.status = SOLD) as db_listing
+    (Create PayoutLedger) as db_payout
+    (Update SellerBalance) as db_balance
+  }
+}
+
+rectangle "5. Payout Scheduling" as step5 {
+  package "Backend" as pkg13 <<BACKEND_COLOR>> {
+    (Check payout schedule) as check_sched
+    (Create Stripe payout\nrequest) as create_payout_req
+  }
+  
+  package "Stripe" as pkg14 <<STRIPE_COLOR>> {
+    (Create payout) as create_payout
+    (Add to batch) as add_batch
+    (Schedule based on\nseller settings) as schedule_payout
+  }
+  
+  package "Backend" as pkg15 <<BACKEND_COLOR>> {
+    (Store payout record) as store_payout
+  }
+  
+  package "Database" as pkg16 <<DB_COLOR>> {
+    (PayoutLedger.status\n= PENDING) as db_payout_pending
+    (SellerBalance.pending\nbalance += amount) as db_pending_bal
+  }
+}
+
+rectangle "6. Bank Transfer" as step6 {
+  package "Stripe" as pkg17 <<STRIPE_COLOR>> {
+    (Process payout batch) as process_batch
+    (Send to ACH/Wire) as send_ach
+  }
+  
+  package "Bank Network" as pkg18 <<BANK_COLOR>> {
+    (Route transfer) as route
+    (Verify account) as verify_acct
+    (Deposit to bank) as deposit
+  }
+}
+
+rectangle "7. Payout Confirmed" as step7 {
+  package "Stripe" as pkg19 <<STRIPE_COLOR>> {
+    (payout.paid event) as payout_success
+  }
+  
+  package "Backend Webhook" as pkg20 <<BACKEND_COLOR>> {
+    (Process payout event) as process_payout
+    (Update ledger) as update_ledger
+    (Move balance) as move_balance
+  }
+  
+  package "Database" as pkg21 <<DB_COLOR>> {
+    (PayoutLedger.status\n= PAID) as db_paid
+    (SellerBalance.available\nbalance += amount) as db_avail_bal
+    (SellerBalance.pending\nbalance -= amount) as db_pending_dec
+  }
+  
+  package "Frontend" as pkg22 <<FRONTEND_COLOR>> {
+    (Seller sees deposit\nin profile) as see_deposit
+  }
+}
+
+event1 --> event2
+event2 --> val1
+val1 --> val2
+val2 --> calc1
+
+calc1 --> q1
+calc1 --> q2
+calc1 --> q3
+
+val2 --> stripe_req
+stripe_req --> pi_create
+pi_create --> client_secret
+client_secret --> store_pi
+store_pi --> db_pi
+
+client_secret --> show_ui
+show_ui --> enter_card
+enter_card --> confirm_pay
+confirm_pay --> tokenize
+tokenize --> authorize
+authorize --> create_charge
+
+create_charge --> event_success
+event_success --> verify_sig
+verify_sig --> find_pay
+find_pay --> update_status
+
+update_status --> db_success
+db_success --> db_listing
+db_listing --> db_payout
+db_payout --> db_balance
+
+db_balance --> check_sched
+check_sched --> create_payout_req
+create_payout_req --> create_payout
+create_payout --> add_batch
+add_batch --> schedule_payout
+
+schedule_payout --> store_payout
+store_payout --> db_payout_pending
+store_payout --> db_pending_bal
+
+db_pending_bal --> process_batch
+process_batch --> send_ach
+send_ach --> route
+route --> verify_acct
+verify_acct --> deposit
+
+deposit --> payout_success
+payout_success --> process_payout
+process_payout --> update_ledger
+update_ledger --> move_balance
+
+move_balance --> db_paid
+db_paid --> db_avail_bal
+db_avail_bal --> db_pending_dec
+
+db_pending_dec --> see_deposit
+
+note right of step1
+  **Step 1: Checkout Initiation**
+  - Frontend sends listing details
+  - Backend validates seller & listing
+  - Database queried for current state
+end note
+
+note right of step2
+  **Step 2: Payment Creation**
+  - Backend creates Stripe PaymentIntent
+  - Stripe generates secure clientSecret
+  - Payment record stored in database
+  - Status: PENDING
+end note
+
+note right of step3
+  **Step 3: Payment Processing**
+  - Frontend displays Stripe payment UI
+  - User enters card securely on Stripe
+  - Stripe tokenizes and authorizes
+  - Charge created on Stripe platform
+end note
+
+note right of step4
+  **Step 4: Payment Confirmed**
+  - Stripe sends webhook event
+  - Backend verifies signature
+  - Database updated with all related records
+  - Listing marked as SOLD
+  - Seller balance updated
+end note
+
+note right of step5
+  **Step 5: Payout Scheduling**
+  - Backend checks payout schedule
+  - Creates Stripe payout to seller's account
+  - Payout record stored (status: PENDING)
+  - Funds held in pending balance
+end note
+
+note right of step6
+  **Step 6: Bank Transfer**
+  - Stripe processes payout batch
+  - Sends via ACH/Wire to seller bank
+  - Bank verifies account
+  - Money deposits to seller's account
+end note
+
+note right of step7
+  **Step 7: Payout Confirmed**
+  - Stripe sends payout.paid webhook
+  - Backend updates ledger to PAID
+  - Moves funds from pending to available
+  - Seller sees deposit in app
+end note
+
+@enduml

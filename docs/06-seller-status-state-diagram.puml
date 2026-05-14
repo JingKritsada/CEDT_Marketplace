@@ -1,0 +1,97 @@
+@startuml seller-status-state-diagram
+!define STATE_START #90EE90
+!define STATE_PROCESS #87CEEB
+!define STATE_ACTIVE #FFD700
+!define STATE_ERROR #FF6B6B
+
+[*] --> USER_REGISTERED
+
+USER_REGISTERED --> SELLER_ONBOARDING_REQUESTED : User taps\nBecome a Seller
+
+SELLER_ONBOARDING_REQUESTED --> STRIPE_ACCOUNT_CREATED : Backend creates\nStripe Connect account
+
+STRIPE_ACCOUNT_CREATED --> ONBOARDING_IN_PROGRESS : Stripe sends\nonboarding link
+
+ONBOARDING_IN_PROGRESS --> ACTIVE : Seller completes all\nverification steps
+
+ONBOARDING_IN_PROGRESS --> RESTRICTED : Stripe detects\nincomplete/suspicious data
+
+RESTRICTED --> ONBOARDING_IN_PROGRESS : Seller fixes\nMissing information
+
+ACTIVE --> PAYMENT_PENDING : Buyer initiates\ncheckout
+
+PAYMENT_PENDING --> PAYMENT_SUCCEEDED : Payment confirmed\nby Stripe
+
+PAYMENT_PENDING --> PAYMENT_FAILED : Payment declined
+
+PAYMENT_FAILED --> PAYMENT_PENDING : Buyer retries
+
+PAYMENT_SUCCEEDED --> SELLER_PENDING_PAYOUT : Backend creates\npayout record
+
+SELLER_PENDING_PAYOUT --> SELLER_PAID : Stripe sends funds\nto seller bank
+
+SELLER_PENDING_PAYOUT --> PAYOUT_FAILED : Stripe encounters\npayout error
+
+PAYOUT_FAILED --> SELLER_PENDING_PAYOUT : Backend retries\nor manual intervention
+
+SELLER_PAID --> ACTIVE : Cycle complete,\nready for next sale
+
+ACTIVE --> ACTIVE : [Multiple transactions]
+
+note right of USER_REGISTERED
+  User just registered
+  No seller status yet
+end note
+
+note right of SELLER_ONBOARDING_REQUESTED
+  User wants to enable payouts
+  Create Stripe Connect account
+end note
+
+note right of ONBOARDING_IN_PROGRESS
+  Seller entering personal & bank info
+  Stripe is verifying identity
+end note
+
+note right of ACTIVE
+  Seller verified ✓
+  Charges enabled ✓
+  Payouts enabled ✓
+  Ready to receive payments
+end note
+
+note right of RESTRICTED
+  Seller has incomplete/rejected info
+  Cannot receive payments yet
+  Must complete onboarding
+end note
+
+note right of PAYMENT_PENDING
+  PaymentIntent created
+  Awaiting buyer card confirmation
+end note
+
+note right of PAYMENT_SUCCEEDED
+  Stripe confirmed payment
+  Funds moving to seller account
+end note
+
+note right of SELLER_PENDING_PAYOUT
+  Funds pending payout
+  On Stripe payout schedule
+  (daily/weekly/monthly)
+end note
+
+note right of SELLER_PAID
+  Funds arrived in seller bank
+  Payout completed
+  Ready for next transaction
+end note
+
+note right of PAYOUT_FAILED
+  Stripe failed to deposit
+  Usually: bank account issue
+  Seller must update bank info
+end note
+
+@enduml

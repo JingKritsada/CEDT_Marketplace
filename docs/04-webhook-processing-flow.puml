@@ -1,0 +1,188 @@
+@startuml webhook-processing-flow
+!define STRIPE_COLOR #FFE082
+!define BACKEND_COLOR #E1F5FF
+!define DB_COLOR #C8E6C9
+
+participant Stripe as "Stripe"
+participant Backend as "Backend Webhook\nEndpoint"
+participant Database as "Database"
+
+Stripe -> Backend: POST /webhooks/stripe\n(event data)
+activate Backend
+
+Backend -> Backend: Extract signature from headers
+
+Backend -> Backend: Verify webhook signature\nusing STRIPE_WEBHOOK_SECRET
+
+alt Signature Invalid
+  Backend -> Stripe: Return 400 Unauthorized
+  deactivate Backend
+  Stripe --> Stripe: Log failed signature
+end
+
+Backend -> Backend: Extract event.type
+
+== Event: payment_intent.succeeded ==
+alt payment_intent.succeeded
+  Backend -> Database: Find payment by\nstripe_payment_intent_id
+  activate Database
+  Database --> Backend: Payment record
+  deactivate Database
+  
+  Backend -> Database: Update payment.status = SUCCEEDED
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Update listing.status = SOLD
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Create payout_ledger entry
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Increase seller.pending_balance
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Stripe: Return 200 OK
+  deactivate Backend
+  Stripe --> Stripe: Acknowledged
+end
+
+== Event: payment_intent.payment_failed ==
+alt payment_intent.payment_failed
+  Backend -> Database: Find payment by\nstripe_payment_intent_id
+  activate Database
+  Database --> Backend: Payment record
+  deactivate Database
+  
+  Backend -> Database: Update payment.status = FAILED
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Update listing.status = AVAILABLE\n(release listing)
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Backend: Send notification to buyer
+  
+  Backend -> Stripe: Return 200 OK
+  deactivate Backend
+  Stripe --> Stripe: Acknowledged
+end
+
+== Event: charge.refunded ==
+alt charge.refunded
+  Backend -> Database: Find payment by\nstripe_charge_id
+  activate Database
+  Database --> Backend: Payment record
+  deactivate Database
+  
+  Backend -> Database: Update payment.status = REFUNDED
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Reverse seller.pending_balance
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Backend: Send notification to seller
+  
+  Backend -> Stripe: Return 200 OK
+  deactivate Backend
+  Stripe --> Stripe: Acknowledged
+end
+
+== Event: account.updated ==
+alt account.updated
+  Backend -> Database: Find seller by\nstripe_connect_account_id
+  activate Database
+  Database --> Backend: Seller record
+  deactivate Database
+  
+  Backend -> Backend: Extract charges_enabled,\npayouts_enabled from event
+  
+  Backend -> Database: Update seller.connect_status\nbased on event data
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Update seller.charges_enabled
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Update seller.payouts_enabled
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Stripe: Return 200 OK
+  deactivate Backend
+  Stripe --> Stripe: Acknowledged
+end
+
+== Event: payout.paid ==
+alt payout.paid
+  Backend -> Database: Find payout by\nstripe_payout_id
+  activate Database
+  Database --> Backend: Payout record
+  deactivate Database
+  
+  Backend -> Database: Update payout.status = PAID
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Database: Move funds to seller.available_balance\n(from pending_balance)
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Backend: Send notification to seller\n(funds received)
+  
+  Backend -> Stripe: Return 200 OK
+  deactivate Backend
+  Stripe --> Stripe: Acknowledged
+end
+
+== Event: payout.failed ==
+alt payout.failed
+  Backend -> Database: Find payout by\nstripe_payout_id
+  activate Database
+  Database --> Backend: Payout record
+  deactivate Database
+  
+  Backend -> Database: Update payout.status = FAILED
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  
+  Backend -> Backend: Retrieve failure reason\nfrom event
+  
+  Backend -> Backend: Send alert to admin\n(payout failed)
+  
+  Backend -> Backend: Send notification to seller\n(payout issue)
+  
+  Backend -> Stripe: Return 200 OK
+  deactivate Backend
+  Stripe --> Stripe: Acknowledged
+end
+
+== Event: Unknown Type ==
+alt Unknown event
+  Backend -> Stripe: Return 200 OK\n(acknowledge but ignore)
+  deactivate Backend
+  Stripe --> Stripe: Acknowledged
+end
+
+@enduml

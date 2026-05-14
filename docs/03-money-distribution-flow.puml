@@ -1,0 +1,105 @@
+@startuml money-distribution-flow
+!define STRIPE_COLOR #FFE082
+!define BACKEND_COLOR #E1F5FF
+!define BANK_COLOR #C8E6C9
+
+participant Stripe as "Stripe"
+participant Backend as "Backend"
+participant Database as "Database"
+participant Bank as "Seller Bank"
+
+Stripe -> Backend: Webhook: payment_intent.succeeded
+activate Backend
+
+Backend -> Backend: Verify Stripe signature\n(using webhook secret)
+
+Backend -> Database: Find payment record\nby stripe_paymentIntentId
+activate Database
+Database --> Backend: Payment record
+deactivate Database
+
+alt Payment Not Found
+  Backend -> Backend: Log error and return
+  deactivate Backend
+end
+
+Backend -> Database: Mark payment status = SUCCEEDED
+activate Database
+Database --> Backend: Confirmed
+deactivate Database
+
+Backend -> Backend: Calculate platform fee\n(e.g., 10% of amount)
+
+Backend -> Backend: Calculate seller net amount\n(total - platform fee)
+
+Backend -> Database: Update listing status = SOLD\nor PROCESSING
+activate Database
+Database --> Backend: Updated
+deactivate Database
+
+Backend -> Database: Create payout ledger entry\n(seller_id, amount, status=PENDING)
+activate Database
+Database --> Backend: Ledger entry created
+deactivate Database
+
+Backend -> Database: Update seller balance\n(increase pending_balance)
+activate Database
+Database --> Backend: Balance updated
+deactivate Database
+
+Backend -> Database: Update seller balance\n(increase total_earned)
+activate Database
+Database --> Backend: Balance updated
+deactivate Database
+
+Backend -> Backend: Check payout schedule\n(e.g., daily, weekly)
+
+alt Payout Schedule Not Ready
+  Backend -> Database: Keep funds in pending
+  activate Database
+  Database --> Backend: Done
+  deactivate Database
+  Backend -> Backend: Return
+  deactivate Backend
+end
+
+Backend -> Stripe: Create Stripe payout\n(to seller connected account,\namount, stripeConnectAccountId)
+activate Stripe
+Stripe -> Stripe: Schedule payout\nbased on account settings
+Stripe --> Backend: Payout ID
+deactivate Stripe
+
+Backend -> Database: Update payout ledger\n(stripe_payout_id,\nstatus tracking)
+activate Database
+Database --> Backend: Updated
+deactivate Database
+
+Stripe -> Stripe: Process payout\n(batches, validation)
+
+Stripe -> Bank: Transfer funds\nto seller bank account
+activate Bank
+Bank --> Stripe: Transfer confirmed
+deactivate Bank
+
+Stripe -> Backend: Webhook: payout.paid
+activate Backend
+Backend -> Database: Find payout by\nstripe_payout_id
+activate Database
+Database --> Backend: Payout record
+deactivate Database
+
+Backend -> Database: Mark payout status = PAID
+activate Database
+Database --> Backend: Updated
+deactivate Database
+
+Backend -> Database: Move funds to available_balance\n(from pending_balance)
+activate Database
+Database --> Backend: Balance updated
+deactivate Database
+
+deactivate Backend
+
+Bank -> Bank: Seller sees deposit\nin bank account
+
+@enduml

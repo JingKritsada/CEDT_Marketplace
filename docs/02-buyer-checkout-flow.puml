@@ -1,0 +1,79 @@
+@startuml buyer-checkout-flow
+!define FRONTEND_COLOR #FFE4E1
+!define BACKEND_COLOR #E1F5FF
+!define STRIPE_COLOR #FFE082
+
+participant Frontend as "Frontend\n(iOS App)"
+participant Backend as "Backend\n(Node.js)"
+participant Stripe as "Stripe\nAPI"
+participant Webhook as "Webhook\nListener"
+participant Database as "Database"
+
+Frontend -> Backend: POST /checkout\n(listingId, buyerId)
+activate Backend
+
+Backend -> Database: Check if listing exists\nand is AVAILABLE
+activate Database
+Database --> Backend: Listing status
+deactivate Database
+
+Backend -> Backend: Validate listing price\nValidate buyer eligibility\nCheck buyer != seller
+
+alt Validation Failed
+  Backend --> Frontend: Error: Cannot purchase
+  deactivate Backend
+end
+
+Backend -> Backend: Calculate final amount\n(in smallest currency unit)
+
+Backend -> Stripe: Create PaymentIntent\n(amount, sellerId, metadata)
+activate Stripe
+Stripe --> Backend: PaymentIntent\n(clientSecret)
+deactivate Stripe
+
+Backend -> Database: Create pending payment record\n(stripe_payment_intent_id,\nstatus=PENDING)
+activate Database
+Database --> Backend: Payment record created
+deactivate Database
+
+Backend --> Frontend: Return clientSecret
+
+deactivate Backend
+
+Frontend -> Stripe: Present Stripe payment UI\n(card entry, etc)
+activate Stripe
+Stripe -> Frontend: Customer enters card details
+Frontend -> Stripe: Confirm payment\n(clientSecret)
+Stripe --> Frontend: Payment confirmation
+
+alt Payment Succeeded
+  Stripe -> Webhook: Send payment_intent.succeeded
+  activate Webhook
+  Webhook -> Database: Verify signature
+  activate Database
+  Webhook -> Database: Find payment by\nstripe_payment_intent_id
+  Database --> Webhook: Payment record
+  Webhook -> Database: Mark payment = SUCCEEDED
+  Webhook -> Database: Update listing status = SOLD
+  Webhook -> Database: Update seller balance
+  Database --> Webhook: Done
+  deactivate Database
+  deactivate Webhook
+  
+  Stripe --> Frontend: Success
+  deactivate Stripe
+  Frontend -> Frontend: Show success screen
+else Payment Failed
+  Stripe --> Frontend: Payment failed error
+  deactivate Stripe
+  
+  Stripe -> Webhook: Send payment_intent.payment_failed
+  activate Webhook
+  Webhook -> Database: Mark payment = FAILED
+  Database --> Webhook: Done
+  deactivate Webhook
+  
+  Frontend -> Frontend: Show error message
+end
+
+@enduml

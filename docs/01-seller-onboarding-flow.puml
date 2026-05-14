@@ -1,0 +1,38 @@
+@startuml seller-onboarding-flow
+!define PROCESS_COLOR #B4D7FF
+!define DECISION_COLOR #FFFFB4
+!define ENDPOINT_COLOR #C8E6C9
+
+start
+:Seller registers in app;
+:Seller taps Become a Seller;
+:Backend checks if seller has\nstripeConnectAccountId;
+
+if (Has stripeConnectAccountId?) then (No)
+  :Backend creates\nStripe Connect account;
+  :Store stripeConnectAccountId\nin database;
+else (Yes)
+  :Skip account creation;
+endif
+
+:Create Stripe onboarding\naccount link;
+:Return onboarding URL\nto frontend;
+:Frontend opens Stripe\nonboarding page;
+:Seller enters identity info\n(name, DOB, SSN);
+:Seller enters bank account\ndetails;
+:Stripe verifies identity\nand bank details;
+
+if (Stripe account verified?) then (No)
+  :Return error to seller;
+  :Seller must fix missing info;
+  :Retry onboarding;
+else (Yes)
+  :Update seller status = ACTIVE;
+  :Update chargesEnabled = true;
+  :Update payoutsEnabled = true;
+  :Webhook updates\ndatabase state;
+  :Seller can now receive payouts;
+  stop
+endif
+
+@enduml

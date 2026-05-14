@@ -1,0 +1,53 @@
+@startuml seller-receiving-money-flow
+!define STRIPE_COLOR #FFE082
+!define BACKEND_COLOR #E1F5FF
+!define BANK_COLOR #C8E6C9
+
+start
+:Buyer completes payment;
+:Money enters Stripe\nplatform account;
+
+:Stripe deducts\nplatform fee (10%);
+
+:Calculate seller earnings\n(90% of transaction);
+
+:Seller earnings recorded\nin payout_ledger;
+
+if (Seller Stripe Connect\naccount ready?) then (No)
+  :Hold funds as\nPENDING balance;
+  :Wait for seller to\ncomplete onboarding;
+  :Once seller verified → ACTIVE;
+else (Yes)
+  :Skip waiting;
+endif
+
+:Move funds to seller\nConnected account\n(on Stripe);
+
+:Check payout schedule\n(based on seller settings);
+
+:Apply payout schedule:
+  - Instant: within minutes
+  - Daily: daily cycle
+  - Weekly: weekly cycle
+  - Monthly: monthly cycle;
+
+:Stripe sends funds\nto seller bank account;
+
+:Update payout_ledger\nstatus = PAID;
+
+:Seller sees bank deposit;
+
+:Seller balance updated\nto AVAILABLE;
+
+stop
+
+note right
+  Key Points:
+  - Stripe owns the transfer rails
+  - Your app just tracks accounting
+  - Bank deposits happen on Stripe's schedule
+  - Database reflects the source of truth
+  - Webhooks confirm all state changes
+end note
+
+@enduml
