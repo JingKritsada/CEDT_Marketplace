@@ -18,11 +18,11 @@ struct StatusBadge: View {
 
     var body: some View {
         Text(status.displayName)
-            .font(.caption)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(color.opacity(0.15))
-            .foregroundColor(color)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(color)
+            .foregroundColor(.white)
             .clipShape(Capsule())
     }
 }

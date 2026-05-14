@@ -94,8 +94,11 @@ struct ListingDetailView: View {
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 8) {
+                HStack {
                     StatusBadge(status: listing.status)
+                        .padding(12)
+
+                    Spacer()
 
                     Text(listing.isFree ? "Free" : "THB \(listing.price)")
                         .font(.headline)
@@ -105,8 +108,8 @@ struct ListingDetailView: View {
                         .background(Color.white.opacity(0.9))
                         .foregroundColor(.primary)
                         .clipShape(Capsule())
+                        .padding(12)
                 }
-                .padding(12)
             }
 
             HStack(spacing: 8) {
