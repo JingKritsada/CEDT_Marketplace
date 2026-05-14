@@ -8,3 +8,9 @@ export const getPickupLocations = asyncHandler(async (_req: Request, res: Respon
 
 	res.status(200).json(pickupLocations);
 });
+
+export const createPickupLocation = asyncHandler(async (req: Request, res: Response) => {
+	const pickupLocation = await pickupLocationService.create(req.body);
+
+	res.status(201).json(pickupLocation);
+});

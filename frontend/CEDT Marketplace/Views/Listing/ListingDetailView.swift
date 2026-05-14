@@ -308,8 +308,8 @@ struct ListingDetailView: View {
                 Text(title)
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
-				Text(name)
+
+                Text(name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.primary)
             }
@@ -342,6 +342,7 @@ struct ListingDetailView: View {
             socialLinkLabel(link)
         }
     }
+
     private func socialLinkLabel(_ link: SocialLink) -> some View {
         HStack(spacing: 12) {
             Image(systemName: link.systemImage)
@@ -368,7 +369,7 @@ struct ListingDetailView: View {
 
         if let lineId = lineId?.trimmingCharacters(in: .whitespacesAndNewlines), !lineId.isEmpty {
             let line = "https://line.me/ti/p/~\(lineId)"
-			let url = URL(string: line)
+            let url = URL(string: line)
             links.append(SocialLink(systemImage: "message.fill", title: "LINE", value: line, url: url, color: .green))
         }
 
@@ -387,8 +388,7 @@ struct ListingDetailView: View {
 
     private func profileAvatar(name: String, avatarUrl: String?) -> some View {
         Group {
-            if let avatarUrl, let url = URL(string: avatarUrl.trimmingCharacters(in: .whitespacesAndNewlines)), url.scheme?.hasPrefix("http") == true
-            {
+            if let avatarUrl, let url = URL(string: avatarUrl.trimmingCharacters(in: .whitespacesAndNewlines)), url.scheme?.hasPrefix("http") == true {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case let .success(image):
@@ -436,7 +436,9 @@ struct ListingDetailView: View {
         let url: URL?
         let color: Color
 
-        var id: String { title + value }
+        var id: String {
+            title + value
+        }
     }
 
     private var shareURL: URL? {

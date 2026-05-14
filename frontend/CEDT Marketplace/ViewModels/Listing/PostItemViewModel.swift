@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import UIKit
 
 @MainActor
 final class PostItemViewModel: ObservableObject {
@@ -11,32 +12,72 @@ final class PostItemViewModel: ObservableObject {
     @Published var selectedCategoryId: String?
     @Published var selectedPickupLocationId: String?
     @Published var condition: ListingCondition = .good
-    @Published var imageUrls: [String] = []
+    @Published var imagePreviews: [UIImage] = []
     @Published var categories: [Category] = []
     @Published var pickupLocations: [PickupLocation] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
     private let listingService: ListingService
+    private let imageUploadService: ImageUploadService
     private let categoryService: CategoryService
     private let pickupLocationService: PickupLocationService
+    private var imageData: [Data] = []
+    private var cancellables = Set<AnyCancellable>()
 
     init(
         listingService: ListingService? = nil,
+        imageUploadService: ImageUploadService? = nil,
         categoryService: CategoryService? = nil,
         pickupLocationService: PickupLocationService? = nil
     ) {
         self.listingService = listingService ?? ListingService()
+        self.imageUploadService = imageUploadService ?? ImageUploadService()
         self.categoryService = categoryService ?? CategoryService()
         self.pickupLocationService = pickupLocationService ?? PickupLocationService()
+        
+        setupBindings()
+    }
+    
+    private func setupBindings() {
+        $isFree
+            .sink { [weak self] isFree in
+                if isFree {
+                    self?.price = "0"
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    func addImages(from dataItems: [Data]) {
+        for data in dataItems {
+            guard let image = UIImage(data: data) else { continue }
+            imageData.append(data)
+            imagePreviews.append(image)
+        }
+    }
+
+    func removeImage(at index: Int) {
+        guard imageData.indices.contains(index), imagePreviews.indices.contains(index) else { return }
+        imageData.remove(at: index)
+        imagePreviews.remove(at: index)
     }
 
     func loadOptions() async {
+        errorMessage = nil
+
         do {
-            async let categories = categoryService.fetchCategories()
-            async let locations = pickupLocationService.fetchPickupLocations()
-            self.categories = try await categories
-            pickupLocations = try await locations
+            let fetchedCategories = try await categoryService.fetchCategories()
+            categories = fetchedCategories
+        } catch let error as NetworkError {
+            errorMessage = error.userMessage
+        } catch {
+            errorMessage = NetworkError.unknown.userMessage
+        }
+
+        do {
+            let fetchedLocations = try await pickupLocationService.fetchPickupLocations()
+            pickupLocations = fetchedLocations
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {
@@ -52,6 +93,7 @@ final class PostItemViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
+            let uploadedImageUrls = try await imageUploadService.uploadListingImages(imageData)
             let priceValue = isFree ? 0 : (Int(price) ?? 0)
             let payload = CreateListingRequest(
                 title: title,
@@ -61,7 +103,7 @@ final class PostItemViewModel: ObservableObject {
                 courseCode: courseCode.isEmpty ? nil : courseCode,
                 categoryId: selectedCategoryId ?? "",
                 pickupLocationId: selectedPickupLocationId ?? "",
-                images: imageUrls,
+                images: uploadedImageUrls,
                 condition: condition
             )
             return try await listingService.createListing(payload)
@@ -88,13 +130,14 @@ final class PostItemViewModel: ObservableObject {
             return false
         }
         guard selectedCategoryId != nil else {
-            errorMessage = "Select a category."
+            errorMessage = "Category is required."
             return false
         }
         guard selectedPickupLocationId != nil else {
-            errorMessage = "Select a pickup location."
+            errorMessage = "Pickup location is required."
             return false
         }
+
         return true
     }
 }

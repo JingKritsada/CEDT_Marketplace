@@ -71,7 +71,9 @@ final class APIClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
 
         if endpoint.requiresAuth {
             guard let token = accessToken else {

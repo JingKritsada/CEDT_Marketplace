@@ -70,3 +70,4 @@ DerivedData/
 *.xcuserdata
 .DS_Store
 **/.swiftpm/xcode/xcuserdata/
+backend/public/uploads/

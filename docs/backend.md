@@ -99,10 +99,12 @@ STUDENT_EMAIL_DOMAIN="student.chula.ac.th"
 
 ### Categories and Pickup Locations
 
-| Method | Path              | Description       | Auth |
-| ------ | ----------------- | ----------------- | ---- |
-| GET    | /categories       | List categories   | No   |
-| GET    | /pickup-locations | List pickup spots | No   |
+| Method | Path              | Description        | Auth |
+| ------ | ----------------- | ------------------ | ---- |
+| GET    | /categories       | List categories    | No   |
+| POST   | /categories       | Create category    | No   |
+| GET    | /pickup-locations | List pickup spots  | No   |
+| POST   | /pickup-locations | Create pickup spot | No   |
 
 ### Cart
 

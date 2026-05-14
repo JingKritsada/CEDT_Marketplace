@@ -1,79 +1,291 @@
 import Combine
+import PhotosUI
 import SwiftUI
+import UIKit
 
 struct PostItemView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = PostItemViewModel()
 
+    private let cardCornerRadius: CGFloat = 24
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Listing") {
-                    TextField("Title", text: $viewModel.title)
-                    TextField("Description", text: $viewModel.description)
-                }
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    headerSection
 
-                Section("Pricing") {
-                    Toggle("Free", isOn: $viewModel.isFree)
-                    if !viewModel.isFree {
-                        TextField("Price", text: $viewModel.price)
-                            .keyboardType(.numberPad)
+                    ListingImagePickerView(
+                        previews: viewModel.imagePreviews,
+                        onAdd: { dataItems in viewModel.addImages(from: dataItems) },
+                        onRemove: { index in
+                            viewModel.removeImage(at: index)
+                        }
+                    )
+
+                    formCard(title: "Listing details", systemImage: "square.and.pencil") {
+                        stackedField(label: "Title", placeholder: "e.g. Raspberry Pi 4 Model B", text: $viewModel.title)
+                        multilineField(label: "Description", placeholder: "Mention condition, usage history, and what is included.", text: $viewModel.description)
                     }
-                }
 
-                Section("Category") {
-                    Picker("Category", selection: $viewModel.selectedCategoryId) {
-                        Text("Select").tag(String?.none)
-                        ForEach(viewModel.categories) { category in
-                            Text(category.name).tag(Optional(category.id))
+                    formCard(title: "Pricing", systemImage: "bahtsign.circle") {
+                        Toggle("Free item", isOn: $viewModel.isFree)
+                            .tint(.accentPrimary)
+
+                        stackedField(
+                            label: "Price",
+                            placeholder: "0",
+                            text: $viewModel.price,
+                            keyboardType: .numberPad,
+                            prefix: "฿",
+                            isDisabled: viewModel.isFree
+                        )
+                    }
+
+                    formCard(title: "Item info", systemImage: "tag") {
+                        pickerField(
+                            label: "Category",
+                            selection: $viewModel.selectedCategoryId,
+                            placeholder: "Select a category",
+                            options: viewModel.categories.map { ($0.id, $0.name) }
+                        )
+
+                        pickerField(
+                            label: "Pickup location",
+                            selection: $viewModel.selectedPickupLocationId,
+                            placeholder: "Select a pickup spot",
+                            options: viewModel.pickupLocations.map { ($0.id, "\($0.name)") }
+                        )
+
+                        pickerField(
+                            label: "Condition",
+                            selection: Binding(
+                                get: { viewModel.condition.rawValue },
+                                set: { newValue in
+                                    if let condition = ListingCondition(rawValue: newValue) {
+                                        viewModel.condition = condition
+                                    }
+                                }
+                            ),
+                            placeholder: "Condition",
+                            options: ListingCondition.allCases.map { ($0.rawValue, $0.displayName) }
+                        )
+
+                        stackedField(label: "Course code", placeholder: "2110101", text: $viewModel.courseCode)
+                    }
+
+                    // Error
+                    if let errorMessage = viewModel.errorMessage {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(.red)
+
+                            Text(errorMessage)
+                                .font(.subheadline)
+                                .foregroundColor(.red)
                         }
                     }
-                }
 
-                Section("Pickup") {
-                    Picker("Pickup Location", selection: $viewModel.selectedPickupLocationId) {
-                        Text("Select").tag(String?.none)
-                        ForEach(viewModel.pickupLocations) { location in
-                            Text("\(location.name) - \(location.building)").tag(Optional(location.id))
-                        }
-                    }
-                }
-
-                Section("Course") {
-                    TextField("Course Code", text: $viewModel.courseCode)
-                }
-
-                Section("Condition") {
-                    Picker("Condition", selection: $viewModel.condition) {
-                        ForEach(ListingCondition.allCases, id: \.self) { condition in
-                            Text(condition.displayName).tag(condition)
-                        }
-                    }
-                }
-
-                if let errorMessage = viewModel.errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                    }
-                }
-
-                Section {
-                    PrimaryButton(title: "Post Listing", action: {
-                        Task {
-                            if let _ = await viewModel.submitListing() {
-                                dismiss()
+                    PrimaryButton(
+                        title: "Post Item",
+                        action: {
+                            Task {
+                                if await viewModel.submitListing() != nil {
+                                    dismiss()
+                                }
                             }
-                        }
-                    }, isLoading: viewModel.isLoading)
+                        },
+                        paddingSize: 14,
+                        isLoading: viewModel.isLoading
+                    )
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 32)
+            }
+            .background(Color(.systemGray6))
+            .toolbar(.hidden, for: .navigationBar)
+            .task { await viewModel.loadOptions() }
+            .onChange(of: viewModel.isFree) { _, isFree in
+                if isFree {
+                    viewModel.price = "0"
                 }
             }
-            .navigationTitle("Post Item")
-            .scrollContentBackground(.hidden)
-            .background(Color(.systemGray6))
-            .task { await viewModel.loadOptions() }
         }
         .background(Color(.systemGray6))
+    }
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("List something useful.")
+                .font(.largeTitle.bold())
+                .foregroundColor(.primary)
+            Text("Add photos, fill in the blank, and publish it.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .padding(.bottom, 2)
+    }
+
+    private func formCard<Content: View>(title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+                .foregroundColor(.primary)
+
+            content()
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+    }
+
+    private func stackedField(
+        label: String,
+        placeholder: String,
+        text: Binding<String>,
+        keyboardType: UIKeyboardType = .default,
+        prefix: String? = nil,
+        isDisabled: Bool = false
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 10) {
+                if let prefix {
+                    Text(prefix)
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
+
+                TextField(placeholder, text: text)
+                    .keyboardType(keyboardType)
+                    .textInputAutocapitalization(.sentences)
+                    .autocorrectionDisabled()
+                    .disabled(isDisabled)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .opacity(isDisabled ? 0.55 : 1)
+        }
+    }
+
+    private func multilineField(label: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+
+            ZStack(alignment: .topLeading) {
+                if text.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(placeholder)
+                        .foregroundColor(.secondary.opacity(0.55))
+                        .padding(.top, 14)
+                        .padding(.horizontal, 18)
+                }
+
+                TextEditor(text: text)
+                    .frame(minHeight: 120)
+                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 10)
+            }
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+
+    private func pickerField(
+        label: String,
+        selection: Binding<String?>,
+        placeholder: String,
+        options: [(String, String)]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+
+            Menu {
+				Button(placeholder) { selection.wrappedValue = nil }
+				ForEach(options, id: \.0) { id, title in
+					Button {
+						selection.wrappedValue = id
+					} label: {
+						if selection.wrappedValue == id {
+							Label(title, systemImage: "checkmark")
+						} else {
+							Text(title)
+						}
+					}
+				}
+			} label: {
+                HStack(spacing: 8) {
+                    Text(options.first(where: { $0.0 == selection.wrappedValue })?.1 ?? placeholder)
+                        .foregroundColor(selection.wrappedValue == nil ? Color(.placeholderText) : .accentColor)
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.accentColor)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+        }
+    }
+
+    private func pickerField(
+        label: String,
+        selection: Binding<String>,
+        placeholder: String,
+        options: [(String, String)]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+
+            Menu {
+				ForEach(options, id: \.0) { id, title in
+					Button {
+						selection.wrappedValue = id
+					} label: {
+						if selection.wrappedValue == id {
+							Label(title, systemImage: "checkmark")
+						} else {
+							Text(title)
+						}
+					}
+				}
+			} label: {
+                HStack(spacing: 8) {
+                    Text(options.first(where: { $0.0 == selection.wrappedValue })?.1 ?? placeholder)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundColor(.accentColor)
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.accentColor)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+        }
     }
 }
 

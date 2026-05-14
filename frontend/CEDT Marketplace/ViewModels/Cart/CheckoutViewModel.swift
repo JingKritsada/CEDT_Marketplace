@@ -9,7 +9,7 @@ final class CheckoutViewModel: ObservableObject {
 
     func confirmOrder() {
         guard selectedPickupLocationId != nil else {
-            errorMessage = "Select a pickup location."
+            errorMessage = "Pickup location is required."
             return
         }
         isConfirmed = true

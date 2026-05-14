@@ -69,7 +69,7 @@ final class RegisterViewModel: ObservableObject {
             return false
         }
         guard !confirmPassword.isEmpty else {
-            errorMessage = "Please confirm your password."
+            errorMessage = "Confirm password is required."
             return false
         }
         guard password == confirmPassword else {

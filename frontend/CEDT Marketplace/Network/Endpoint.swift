@@ -9,6 +9,7 @@ enum Endpoint {
     case updateListing(id: String)
     case deleteListing(id: String)
     case confirmReceived(id: String)
+    case uploadImages
     case search(query: ListingQuery?)
     case categories
     case pickupLocations
@@ -27,7 +28,7 @@ enum Endpoint {
 
     var method: HTTPMethod {
         switch self {
-        case .login, .register, .createListing, .confirmReceived, .addToCart, .createReview, .refreshToken, .logout:
+        case .login, .register, .createListing, .confirmReceived, .uploadImages, .addToCart, .createReview, .refreshToken, .logout:
             return .post
         case .updateListing, .updateProfile:
             return .patch
@@ -62,6 +63,8 @@ enum Endpoint {
             return "/listings/\(id)"
         case let .confirmReceived(id):
             return "/listings/\(id)/confirm-received"
+        case .uploadImages:
+            return "/uploads/images"
         case .categories:
             return "/categories"
         case .pickupLocations:
@@ -93,7 +96,7 @@ enum Endpoint {
         switch self {
         case .login, .register, .refreshToken, .logout, .listings, .listingDetail, .search, .categories, .pickupLocations, .reviewsByListing, .reviewsBySeller:
             return false
-        case .createListing, .updateListing, .deleteListing, .confirmReceived, .me, .updateProfile, .cart, .addToCart, .removeFromCart, .clearCart, .createReview:
+        case .createListing, .updateListing, .deleteListing, .confirmReceived, .uploadImages, .me, .updateProfile, .cart, .addToCart, .removeFromCart, .clearCart, .createReview:
             return true
         case .user:
             return false

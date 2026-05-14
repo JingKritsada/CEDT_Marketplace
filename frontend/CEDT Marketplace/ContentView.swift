@@ -37,11 +37,6 @@ struct MainTabView: View {
                     Label("Cart", systemImage: "cart")
                 }
 
-            NotificationView()
-                .tabItem {
-                    Label("Alerts", systemImage: "bell")
-                }
-
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person")
