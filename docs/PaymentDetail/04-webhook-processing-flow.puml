@@ -3,186 +3,104 @@
 !define BACKEND_COLOR #E1F5FF
 !define DB_COLOR #C8E6C9
 
-participant Stripe as "Stripe"
-participant Backend as "Backend Webhook\nEndpoint"
-participant Database as "Database"
+' POST /webhooks/stripe is mounted with express.raw({type:'application/json'})
+' BEFORE express.json(), so the signature can be verified against the raw body.
+' Every handler is idempotent via the StripeWebhookEvent table.
 
-Stripe -> Backend: POST /webhooks/stripe\n(event data)
-activate Backend
+participant Stripe   as "Stripe"
+participant Endpoint as "POST /webhooks/stripe"
+participant DB       as "Postgres"
 
-Backend -> Backend: Extract signature from headers
+Stripe -> Endpoint: HTTP POST (raw body + stripe-signature header)
+activate Endpoint
 
-Backend -> Backend: Verify webhook signature\nusing STRIPE_WEBHOOK_SECRET
-
-alt Signature Invalid
-  Backend -> Stripe: Return 400 Unauthorized
-  deactivate Backend
-  Stripe --> Stripe: Log failed signature
+Endpoint -> Endpoint: stripe.webhooks.constructEvent(\n  rawBody, sigHeader, STRIPE_WEBHOOK_SECRET)
+alt signature invalid
+  Endpoint --> Stripe: 400 (Stripe will retry; that's fine)
+  deactivate Endpoint
 end
 
-Backend -> Backend: Extract event.type
-
-== Event: payment_intent.succeeded ==
-alt payment_intent.succeeded
-  Backend -> Database: Find payment by\nstripe_payment_intent_id
-  activate Database
-  Database --> Backend: Payment record
-  deactivate Database
-  
-  Backend -> Database: Update payment.status = SUCCEEDED
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Update listing.status = SOLD
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Create payout_ledger entry
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Increase seller.pending_balance
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Stripe: Return 200 OK
-  deactivate Backend
-  Stripe --> Stripe: Acknowledged
+Endpoint -> DB: INSERT StripeWebhookEvent { id=event.id, type, payload }
+alt unique violation (already processed)
+  Endpoint --> Stripe: 200 OK (duplicate, no-op)
+  deactivate Endpoint
 end
 
-== Event: payment_intent.payment_failed ==
-alt payment_intent.payment_failed
-  Backend -> Database: Find payment by\nstripe_payment_intent_id
-  activate Database
-  Database --> Backend: Payment record
-  deactivate Database
-  
-  Backend -> Database: Update payment.status = FAILED
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Update listing.status = AVAILABLE\n(release listing)
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Backend: Send notification to buyer
-  
-  Backend -> Stripe: Return 200 OK
-  deactivate Backend
-  Stripe --> Stripe: Acknowledged
-end
+Endpoint -> Endpoint: dispatch(event.type)
 
-== Event: charge.refunded ==
-alt charge.refunded
-  Backend -> Database: Find payment by\nstripe_charge_id
-  activate Database
-  Database --> Backend: Payment record
-  deactivate Database
-  
-  Backend -> Database: Update payment.status = REFUNDED
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Reverse seller.pending_balance
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Backend: Send notification to seller
-  
-  Backend -> Stripe: Return 200 OK
-  deactivate Backend
-  Stripe --> Stripe: Acknowledged
-end
+== payment_intent.requires_action ==
+Endpoint -> DB: Payment.status = REQUIRES_ACTION
+Endpoint --> Stripe: 200
 
-== Event: account.updated ==
-alt account.updated
-  Backend -> Database: Find seller by\nstripe_connect_account_id
-  activate Database
-  Database --> Backend: Seller record
-  deactivate Database
-  
-  Backend -> Backend: Extract charges_enabled,\npayouts_enabled from event
-  
-  Backend -> Database: Update seller.connect_status\nbased on event data
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Update seller.charges_enabled
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Update seller.payouts_enabled
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Stripe: Return 200 OK
-  deactivate Backend
-  Stripe --> Stripe: Acknowledged
-end
+== payment_intent.processing  (PromptPay, async) ==
+Endpoint -> DB: Payment.status = PROCESSING
+Endpoint --> Stripe: 200
 
-== Event: payout.paid ==
-alt payout.paid
-  Backend -> Database: Find payout by\nstripe_payout_id
-  activate Database
-  Database --> Backend: Payout record
-  deactivate Database
-  
-  Backend -> Database: Update payout.status = PAID
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Database: Move funds to seller.available_balance\n(from pending_balance)
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Backend: Send notification to seller\n(funds received)
-  
-  Backend -> Stripe: Return 200 OK
-  deactivate Backend
-  Stripe --> Stripe: Acknowledged
-end
+== payment_intent.amount_capturable_updated  (card auth ok) ==
+Endpoint -> DB: Payment.status = REQUIRES_CAPTURE\n              Listing.status = PAID
+Endpoint --> Stripe: 200
 
-== Event: payout.failed ==
-alt payout.failed
-  Backend -> Database: Find payout by\nstripe_payout_id
-  activate Database
-  Database --> Backend: Payout record
-  deactivate Database
-  
-  Backend -> Database: Update payout.status = FAILED
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  
-  Backend -> Backend: Retrieve failure reason\nfrom event
-  
-  Backend -> Backend: Send alert to admin\n(payout failed)
-  
-  Backend -> Backend: Send notification to seller\n(payout issue)
-  
-  Backend -> Stripe: Return 200 OK
-  deactivate Backend
-  Stripe --> Stripe: Acknowledged
-end
+== payment_intent.succeeded ==
+Endpoint -> DB: Payment.status = SUCCEEDED\n              capturedAt, succeededAt = now()\n              Listing.status = RECEIVED (if not already)
+Endpoint --> Stripe: 200
 
-== Event: Unknown Type ==
-alt Unknown event
-  Backend -> Stripe: Return 200 OK\n(acknowledge but ignore)
-  deactivate Backend
-  Stripe --> Stripe: Acknowledged
-end
+== payment_intent.payment_failed ==
+Endpoint -> DB: Payment.status = FAILED\n              failureCode, failureMessage\n              Listing.status = AVAILABLE\n              Listing.currentPaymentIntentId = NULL
+Endpoint --> Stripe: 200
+
+== payment_intent.canceled ==
+Endpoint -> DB: Payment.status = CANCELED\n              Listing.status = AVAILABLE\n              Listing.currentPaymentIntentId = NULL
+Endpoint --> Stripe: 200
+
+== charge.succeeded ==
+Endpoint -> DB: Payment.stripeChargeId = event.data.object.id
+Endpoint --> Stripe: 200
+
+== charge.refunded ==
+Endpoint -> DB: Payment.status = REFUNDED or PARTIALLY_REFUNDED\n              INSERT/UPDATE Refund rows from charge.refunds.data
+note right
+  Note: this event alone does NOT touch
+  SellerProfile.totalEarnedSatang. The
+  follow-up transfer.reversed event does.
+end note
+Endpoint --> Stripe: 200
+
+== application_fee.refunded ==
+Endpoint -> DB: mark Refund.refundApplicationFee = true
+Endpoint --> Stripe: 200
+
+== transfer.reversed ==
+Endpoint -> DB: SellerProfile.totalEarnedSatang -= reversed amount\n              mark Refund.reverseTransfer = true
+Endpoint --> Stripe: 200
+
+== charge.dispute.created ==
+Endpoint -> DB: Payment metadata.dispute = open\n              freeze related Listing (admin review)
+Endpoint -> Endpoint: send admin alert
+Endpoint --> Stripe: 200
+
+== account.updated  (Connect) ==
+Endpoint -> DB: Refresh SellerProfile from event.data.object:\n  - chargesEnabled, payoutsEnabled\n  - detailsSubmitted\n  - requirementsDisabledReason\n  - requirementsCurrentlyDue (string[])\n  - connectStatus derived:\n      payoutsEnabled && chargesEnabled → ACTIVE\n      disabledReason set               → RESTRICTED\n      else                              → PENDING
+Endpoint --> Stripe: 200
+
+== payout.paid  (Connect-scoped, stripeAccount on header) ==
+Endpoint -> DB: SellerProfile.totalPaidOutSatang += amount
+Endpoint -> Endpoint: push notification to seller
+Endpoint --> Stripe: 200
+
+== payout.failed  (Connect-scoped) ==
+Endpoint -> DB: log failure reason
+Endpoint -> Endpoint: admin alert + notify seller\n              ("update your bank info")
+Endpoint --> Stripe: 200
+
+== unknown / unhandled type ==
+Endpoint --> Stripe: 200 (ack, ignore)
+deactivate Endpoint
+
+note over Endpoint
+  Every state mutation runs in the same DB
+  transaction as the StripeWebhookEvent insert,
+  so a crash mid-handler cannot leave a
+  duplicate-event window.
+end note
 
 @enduml

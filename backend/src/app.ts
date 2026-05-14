@@ -4,7 +4,14 @@ import cors from "cors";
 import helmet from "helmet";
 import express from "express";
 
+// Allow BigInt fields (e.g. SellerProfile.totalEarnedSatang) to be JSON-serialized.
+// Serialize as a string to preserve precision; clients can parse with Number()/BigInt().
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+	return this.toString();
+};
+
 import { apiRouter } from "./routes/index.js";
+import { webhookRouter } from "./routes/webhook-route.js";
 import { allowedOrigins } from "./config/cors.js";
 import { setupSwagger } from "./config/swagger.js";
 import { errorHandler } from "./middlewares/error-handler.js";
@@ -21,6 +28,11 @@ app.use(
 		origin: allowedOrigins,
 	})
 );
+
+// Stripe webhooks MUST receive the raw request body to verify the signature.
+// Mount this BEFORE express.json() so the raw body is preserved.
+app.use("/webhooks", webhookRouter);
+
 app.use(express.json({ limit: "2mb" }));
 app.use(express.static(path.join(process.cwd(), "public")));
 app.use(httpLogger);

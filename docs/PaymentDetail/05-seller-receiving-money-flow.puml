@@ -3,51 +3,61 @@
 !define BACKEND_COLOR #E1F5FF
 !define BANK_COLOR #C8E6C9
 
+' Seller's-eye view of where money goes and when.
+' Manual-capture + destination-charge, Stripe Thailand.
+
 start
-:Buyer completes payment;
-:Money enters Stripe\nplatform account;
+:Buyer authorizes payment\n(no money has moved yet);
 
-:Stripe deducts\nplatform fee (10%);
+:Payment.status = REQUIRES_CAPTURE\nListing.status = PAID;
 
-:Calculate seller earnings\n(90% of transaction);
-
-:Seller earnings recorded\nin payout_ledger;
-
-if (Seller Stripe Connect\naccount ready?) then (No)
-  :Hold funds as\nPENDING balance;
-  :Wait for seller to\ncomplete onboarding;
-  :Once seller verified → ACTIVE;
-else (Yes)
-  :Skip waiting;
+if (Seller delivers item at pickup?) then (Yes)
+  :Buyer taps "Confirm Receipt";
+  :Backend calls\nstripe.paymentIntents.capture();
+else (No / dispute / no-show)
+  if (Within ~6 days?) then (Yes)
+    :Buyer or admin cancels PI\n→ Listing back to AVAILABLE\n→ Seller earns nothing;
+    stop
+  else (No)
+    :Auth expires (Stripe ~7d cap)\n→ Auto-canceled\n→ Listing back to AVAILABLE;
+    stop
+  endif
 endif
 
-:Move funds to seller\nConnected account\n(on Stripe);
+:Stripe routes funds in one capture:
+  amount        debited from buyer
+  platformFee   → platform Stripe balance
+  sellerNet     → seller's connected-account balance
+(no separate transfer call needed);
 
-:Check payout schedule\n(based on seller settings);
+:Payment.status = SUCCEEDED\nListing.status = RECEIVED\nSellerProfile.totalEarnedSatang += sellerNet;
 
-:Apply payout schedule:
-  - Instant: within minutes
-  - Daily: daily cycle
-  - Weekly: weekly cycle
-  - Monthly: monthly cycle;
+:Funds sit in seller's Stripe\nconnected-account balance;
 
-:Stripe sends funds\nto seller bank account;
+note right
+  This is "pending" from the seller's POV
+  but it is tracked by STRIPE, not by our DB.
+  We never store pending/available locally.
+end note
 
-:Update payout_ledger\nstatus = PAID;
+:Wait for Stripe's payout schedule\n(Thailand default: rolling T+7 business days, THB);
 
-:Seller sees bank deposit;
+:Stripe initiates payout\nto seller's Thai bank\nautomatically;
 
-:Seller balance updated\nto AVAILABLE;
+:Webhook: payout.paid\n→ totalPaidOutSatang += amount\n→ push notification to seller;
 
+:Seller sees deposit in their Thai bank account;
 stop
 
 note right
-  Key Points:
-  - Stripe owns the transfer rails
-  - Your app just tracks accounting
-  - Bank deposits happen on Stripe's schedule
-  - Database reflects the source of truth
-  - Webhooks confirm all state changes
+  Key truths:
+  - Stripe owns the rails, the schedule, AND the balance.
+  - Our DB only stores: Stripe IDs, statuses, lifetime totals.
+  - For "how much can I withdraw?" → call
+      stripe.balance.retrieve({ stripeAccount }).
+  - For "show my past payouts" → call
+      stripe.payouts.list({ stripeAccount }).
+  - Thailand restriction: THB-only payouts to TH banks.
 end note
 
 @enduml

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { asyncHandler } from "@/utils/async-handler.js";
 import { listingService } from "@/services/listing-service.js";
+import { paymentService } from "@/services/payment-service.js";
 
 const getListingId = (id: string | string[]): string => {
 	return Array.isArray(id) ? id[0] : id;
@@ -48,10 +49,22 @@ export const deleteListing = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const confirmListingReceived = asyncHandler(async (req: Request, res: Response) => {
-	const listing = await listingService.confirmReceived(
-		getListingId(req.params.id),
-		req.auth!.userId
-	);
+	const listingId = getListingId(req.params.id);
+	const userId = req.auth!.userId;
 
-	res.status(200).json(listing);
+	// If there's an active PaymentIntent on this listing, capture it (manual-capture flow);
+	// otherwise this is a free listing — just flip the status.
+	const listing = await listingService.peek(listingId);
+
+	if (listing?.currentPaymentIntentId) {
+		const result = await paymentService.confirmReceiptForListing(listingId, userId);
+
+		res.status(200).json(result);
+
+		return;
+	}
+
+	const updated = await listingService.confirmReceived(listingId, userId);
+
+	res.status(200).json(updated);
 });

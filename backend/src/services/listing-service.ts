@@ -167,6 +167,19 @@ const getListingOrThrow = async (id: string) => {
 };
 
 export const listingService = {
+	async peek(id: string) {
+		return prisma.listing.findUnique({
+			where: { id },
+			select: {
+				id: true,
+				sellerId: true,
+				buyerId: true,
+				status: true,
+				currentPaymentIntentId: true,
+			},
+		});
+	},
+
 	async getAll(query: ListingQueryInput) {
 		return prisma.listing.findMany({
 			where: buildFilter(query),

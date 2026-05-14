@@ -1,0 +1,537 @@
+{
+	"info": {
+		"_postman_id": "c11ec0a3-9b8a-4f3f-bd83-cedt-payment-flow",
+		"name": "CEDT Marketplace — Stripe Payment Flow",
+		"description": "End-to-end test of the manual-capture destination-charge payment loop.\n\nRun the requests in order — each one writes the IDs it produces into collection variables so the next request can use them.\n\n### Prerequisites\n1. Backend running on `{{baseUrl}}` (default `http://localhost:3003`).\n2. `stripe listen --forward-to {{baseUrl}}/webhooks/stripe --forward-connect-to {{baseUrl}}/webhooks/stripe` running in another terminal.\n3. Seller has already completed Stripe Connect onboarding (`connectStatus = ACTIVE`).\n4. Set the variables in the **Variables** tab: `sellerEmail`, `sellerPassword`, `buyerEmail`, `buyerPassword`, `categoryId`, `pickupLocationId`, `stripeConnectAccountId`.\n\n### What this collection proves\n- Seller onboarding state\n- Race-safe checkout (`AVAILABLE → WAITING_FOR_PAYMENT`)\n- PaymentIntent w/ destination charge + application_fee\n- Manual capture on buyer-confirms-receipt\n- All Stripe IDs persisted on the Payment row\n- `totalEarnedSatang` accumulated on SellerProfile\n- Live Stripe balance + payouts proxied through the backend\n- Refund + cancel paths\n\n### What this collection does NOT do automatically\n- Confirming the PaymentIntent from a card — Postman can't simulate cards. After Step 3 you must run this in your shell:\n\n```bash\nstripe payment_intents confirm {{paymentIntentId}} --payment-method pm_card_visa\n```\n",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Auth",
+			"item": [
+				{
+					"name": "Login — Seller",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"const token = json.accessToken || json.token;",
+									"pm.expect(token, 'access token in response').to.be.a('string');",
+									"pm.collectionVariables.set('sellerToken', token);",
+									"if (json.user && json.user.id) pm.collectionVariables.set('sellerUserId', json.user.id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{sellerEmail}}\",\n  \"password\": \"{{sellerPassword}}\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+					}
+				},
+				{
+					"name": "Login — Buyer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"const token = json.accessToken || json.token;",
+									"pm.expect(token, 'access token in response').to.be.a('string');",
+									"pm.collectionVariables.set('buyerToken', token);",
+									"if (json.user && json.user.id) pm.collectionVariables.set('buyerUserId', json.user.id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{buyerEmail}}\",\n  \"password\": \"{{buyerPassword}}\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "1. Seller Onboarding",
+			"item": [
+				{
+					"name": "Start Stripe Connect onboarding",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.expect(json.url, 'onboarding url').to.match(/^https:\\/\\//);",
+									"if (json.stripeConnectAccountId) pm.collectionVariables.set('stripeConnectAccountId', json.stripeConnectAccountId);",
+									"console.log('Open this URL in a browser to complete onboarding:', json.url);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/sellers/onboarding",
+							"host": ["{{baseUrl}}"],
+							"path": ["sellers", "onboarding"]
+						},
+						"description": "Returns a Stripe-hosted URL. Open it in a browser, fill in test data, click Submit. Then run `Refresh seller status` to force-pull state from Stripe."
+					}
+				},
+				{
+					"name": "Refresh seller status from Stripe",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/sellers/onboarding/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["sellers", "onboarding", "refresh"]
+						}
+					}
+				},
+				{
+					"name": "GET /sellers/me",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const p = pm.response.json();",
+									"pm.test('connectStatus = ACTIVE', () => pm.expect(p.connectStatus).to.eql('ACTIVE'));",
+									"pm.test('chargesEnabled', () => pm.expect(p.chargesEnabled).to.be.true);",
+									"pm.test('payoutsEnabled', () => pm.expect(p.payoutsEnabled).to.be.true);",
+									"if (p.stripeConnectAccountId) pm.collectionVariables.set('stripeConnectAccountId', p.stripeConnectAccountId);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/sellers/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["sellers", "me"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Listing & Checkout",
+			"item": [
+				{
+					"name": "Seller creates listing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201 Created', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.expect(json.id, 'listing id').to.be.a('string');",
+									"pm.expect(json.status).to.eql('AVAILABLE');",
+									"pm.collectionVariables.set('listingId', json.id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{sellerToken}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Postman Loop Test\",\n  \"description\": \"Created via Postman collection for end-to-end Stripe test\",\n  \"price\": 75000,\n  \"categoryId\": \"{{categoryId}}\",\n  \"pickupLocationId\": \"{{pickupLocationId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/listings",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings"]
+						}
+					}
+				},
+				{
+					"name": "Buyer initiates /checkout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('201 Created', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.expect(json.paymentIntentId, 'paymentIntentId').to.match(/^pi_/);",
+									"pm.expect(json.clientSecret).to.be.a('string');",
+									"pm.collectionVariables.set('paymentIntentId', json.paymentIntentId);",
+									"pm.collectionVariables.set('paymentId', json.paymentId);",
+									"console.log('Now run in your shell:');",
+									"console.log('  stripe payment_intents confirm ' + json.paymentIntentId + ' --payment-method pm_card_visa');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{buyerToken}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"listingId\": \"{{listingId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/checkout",
+							"host": ["{{baseUrl}}"],
+							"path": ["checkout"]
+						},
+						"description": "After this request succeeds, drop to a terminal and run:\n```bash\nstripe payment_intents confirm {{paymentIntentId}} --payment-method pm_card_visa\n```\nThen proceed to the next folder."
+					}
+				},
+				{
+					"name": "Verify listing → WAITING_FOR_PAYMENT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const l = pm.response.json();",
+									"pm.test('listing locked', () => pm.expect(l.status).to.be.oneOf(['WAITING_FOR_PAYMENT', 'PAID']));",
+									"pm.test('currentPaymentIntentId set', () => pm.expect(l.currentPaymentIntentId).to.match(/^pi_/));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/listings/{{listingId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings", "{{listingId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. After Card Auth (run stripe confirm in shell first)",
+			"item": [
+				{
+					"name": "Verify listing → PAID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const l = pm.response.json();",
+									"pm.test('listing PAID after card auth', () => pm.expect(l.status).to.eql('PAID'));",
+									"pm.test('buyerId attached', () => pm.expect(l.buyerId).to.eql(pm.collectionVariables.get('buyerUserId')));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/listings/{{listingId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings", "{{listingId}}"]
+						},
+						"description": "If this still says WAITING_FOR_PAYMENT, the card-confirm webhook hasn't arrived yet. Check `stripe listen` terminal — you should see `payment_intent.amount_capturable_updated` and `charge.succeeded`."
+					}
+				},
+				{
+					"name": "Verify Payment → REQUIRES_CAPTURE",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const p = pm.response.json();",
+									"pm.test('Payment REQUIRES_CAPTURE', () => pm.expect(p.status).to.eql('REQUIRES_CAPTURE'));",
+									"pm.test('stripeChargeId populated', () => pm.expect(p.stripeChargeId).to.match(/^ch_/));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/payments/{{paymentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "{{paymentId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Confirm Receipt & Capture",
+			"item": [
+				{
+					"name": "Buyer confirms receipt → triggers capture",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Payment SUCCEEDED', () => pm.expect(json.payment.status).to.eql('SUCCEEDED'));",
+									"pm.test('Listing RECEIVED', () => pm.expect(json.listing.status).to.eql('RECEIVED'));",
+									"pm.test('capturedAt set', () => pm.expect(json.payment.capturedAt).to.be.a('string'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/listings/{{listingId}}/confirm-received",
+							"host": ["{{baseUrl}}"],
+							"path": ["listings", "{{listingId}}", "confirm-received"]
+						}
+					}
+				},
+				{
+					"name": "Verify Payment has all Stripe IDs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const p = pm.response.json();",
+									"pm.test('stripeChargeId', () => pm.expect(p.stripeChargeId).to.match(/^ch_/));",
+									"pm.test('stripeTransferId', () => pm.expect(p.stripeTransferId).to.match(/^tr_/));",
+									"pm.test('stripeApplicationFeeId', () => pm.expect(p.stripeApplicationFeeId).to.match(/^fee_/));",
+									"pm.test('sellerNet == amount - fee', () => pm.expect(p.sellerNetSatang).to.eql(p.amountSatang - p.platformFeeSatang));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/payments/{{paymentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "{{paymentId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Seller Wallet",
+			"item": [
+				{
+					"name": "GET /sellers/me (totals)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const p = pm.response.json();",
+									"pm.test('totalEarnedSatang > 0', () => pm.expect(Number(p.totalEarnedSatang)).to.be.greaterThan(0));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/sellers/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["sellers", "me"]
+						}
+					}
+				},
+				{
+					"name": "GET /sellers/me/balance (live)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK', () => pm.response.to.have.status(200));",
+									"const b = pm.response.json();",
+									"pm.test('returns balance object', () => pm.expect(b.object).to.eql('balance'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/sellers/me/balance",
+							"host": ["{{baseUrl}}"],
+							"path": ["sellers", "me", "balance"]
+						}
+					}
+				},
+				{
+					"name": "GET /sellers/me/payouts (live)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/sellers/me/payouts",
+							"host": ["{{baseUrl}}"],
+							"path": ["sellers", "me", "payouts"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Payments — list & detail",
+			"item": [
+				{
+					"name": "List my payments (as buyer)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/payments",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments"]
+						}
+					}
+				},
+				{
+					"name": "List my payments (as seller)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/payments",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Alternate paths (failure / cancel / refund)",
+			"item": [
+				{
+					"name": "Buyer cancels payment (before capture)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/payments/{{paymentId}}/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "{{paymentId}}", "cancel"]
+						},
+						"description": "Use this on a Payment that's still in REQUIRES_CAPTURE — i.e. not yet captured via confirm-received. Listing returns to AVAILABLE."
+					}
+				},
+				{
+					"name": "Seller refunds payment (after capture)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{sellerToken}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"requested_by_customer\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/{{paymentId}}/refund",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "{{paymentId}}", "refund"]
+						},
+						"description": "Full refund (omit `amountSatang` for full). Stripe will fire `charge.refunded`, `application_fee.refunded`, `transfer.reversed` webhooks."
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Webhook — simulate payout.paid",
+			"item": [
+				{
+					"name": "INFO — run this in your shell",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Postman can't trigger Stripe events. To verify the `payout.paid` handler increments `totalPaidOutSatang`, run this in a shell:\n\n```bash\nstripe trigger payout.paid \\\n  --stripe-account {{stripeConnectAccountId}}\n```\n\nThen re-run `GET /sellers/me` in folder 5 — `totalPaidOutSatang` should increase.\n\n(In production, this happens automatically T+7 business days after capture.)"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": { "type": "text/javascript", "exec": [""] }
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3003", "type": "string" },
+		{ "key": "sellerEmail", "value": "1111111111@student.chula.ac.th", "type": "string" },
+		{ "key": "sellerPassword", "value": "sellerpassword", "type": "string" },
+		{ "key": "buyerEmail", "value": "2222222222@student.chula.ac.th", "type": "string" },
+		{ "key": "buyerPassword", "value": "buyerpassword", "type": "string" },
+		{ "key": "categoryId", "value": "cmp5354ty000fhai0pcbx70qw", "type": "string" },
+		{ "key": "pickupLocationId", "value": "cmp53dob50014hai00x6horkw", "type": "string" },
+		{ "key": "sellerToken", "value": "", "type": "string" },
+		{ "key": "buyerToken", "value": "", "type": "string" },
+		{ "key": "sellerUserId", "value": "", "type": "string" },
+		{ "key": "buyerUserId", "value": "", "type": "string" },
+		{ "key": "stripeConnectAccountId", "value": "", "type": "string" },
+		{ "key": "listingId", "value": "", "type": "string" },
+		{ "key": "paymentIntentId", "value": "", "type": "string" },
+		{ "key": "paymentId", "value": "", "type": "string" }
+	]
+}

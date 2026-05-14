@@ -1,367 +1,316 @@
-# CEDT Marketplace - Payment & Seller Onboarding Flow Documentation
+# CEDT Marketplace — Payment & Seller Onboarding Guide
 
-This folder contains comprehensive PlantUML diagrams documenting the payment processing and seller onboarding flows for the CEDT Marketplace application.
+This folder documents how the CEDT Marketplace integrates with **Stripe Connect (Express, country=TH)** to handle buyer payments and seller payouts.
 
-## 📊 Diagram Files Overview
+The marketplace is an **in-person pickup** marketplace for used electronics on campus. The payment design reflects that: funds are **authorized at checkout, then captured only after the buyer confirms physical receipt** at pickup. This protects buyers against no-show sellers without the platform holding customer funds itself.
 
-### 1. **marketplace-er-diagram.puml**
-
-**Entity Relationship Diagram**
-
-- Shows all database entities and their relationships
-- Includes: User, SellerProfile, Listing, Payment, PayoutLedger, SellerBalance, Category, Review, Cart, CartItem, PickupLocation
-- Helps understand data structure and dependencies
-- **Use this when**: Designing database schema or understanding data relationships
-
-### 2. **01-seller-onboarding-flow.puml**
-
-**Seller Onboarding Flow**
-
-- Sequential flow from seller registration to becoming active seller
-- Shows Stripe Connect account creation process
-- Includes identity and bank verification steps
-- Error handling for failed verification
-- **Key states**:
-    - PENDING → ACTIVE → RESTRICTED (if issues)
-- **Use this when**: Understanding how sellers enable payouts
-
-### 3. **02-buyer-checkout-flow.puml**
-
-**Buyer Checkout & Payment Flow**
-
-- Sequence diagram showing buyer-to-seller-to-Stripe interaction
-- Covers validation, PaymentIntent creation, payment confirmation
-- Shows what happens on success and failure
-- Includes webhook processing for payment status updates
-- **Use this when**: Building checkout UI or debugging payment issues
-
-### 4. **03-money-distribution-flow.puml**
-
-**Money Distribution Flow**
-
-- Detailed sequence of fund movement after payment
-- Shows fee calculation and balance updates
-- Includes payout ledger creation
-- Bank transfer initiation through Stripe Connect
-- **Use this when**: Understanding how seller earnings are calculated and transferred
-
-### 5. **04-webhook-processing-flow.puml**
-
-**Webhook Processing Flow**
-
-- Handles all Stripe webhook events
-- Covers:
-    - `payment_intent.succeeded` → Update payment & balances
-    - `payment_intent.payment_failed` → Release listing
-    - `charge.refunded` → Reverse balances
-    - `account.updated` → Refresh seller status
-    - `payout.paid` → Mark funds as received
-    - `payout.failed` → Flag for manual intervention
-- **Critical for**: Webhook implementation and security verification
-- **Use this when**: Implementing webhook handlers
-
-### 6. **06-seller-status-state-diagram.puml**
-
-**Seller Status State Machine**
-
-- State transitions for seller onboarding and payment cycles
-- Shows progression from USER_REGISTERED → ACTIVE → PAYMENT_PENDING → SELLER_PAID
-- Includes error states and recovery paths
-- Helps visualize complete seller lifecycle
-- **Use this when**: Understanding seller account states
-
-### 7. **07-architecture-overview.puml**
-
-**System Architecture Overview**
-
-- High-level view of all system components:
-    - iOS Frontend
-    - Backend Server (Node.js)
-    - Stripe (Payment & Connect)
-    - PostgreSQL Database
-    - External Services
-- Shows data flow between components
-- Clarifies responsibilities of each part
-- **Use this when**: Planning implementation or onboarding new developers
-
-### 8. **08-complete-transaction-dataflow.puml**
-
-**Complete Transaction Data Flow**
-
-- End-to-end flow from checkout to payout completion
-- 7 major steps with detailed data movement
-- Shows all database operations and state changes
-- Includes bank transfer and confirmation
-- **Use this when**: Debugging a payment that's stuck or understanding complete flow
+> ⚠️ Read this guide alongside the PUML files. The guide is the prose explanation; the PUMLs are the canonical flow.
 
 ---
 
-## 🔄 Flow Summary
+## 1. Architecture in one paragraph
 
-### Quick Reference: A Payment Transaction
-
-```
-1. CHECKOUT
-   Buyer clicks "Buy Now"
-   → Backend validates listing & seller
-   → Creates Stripe PaymentIntent
-   → Returns clientSecret to frontend
-
-2. PAYMENT ENTRY
-   Frontend shows Stripe payment UI
-   → User enters card info (on Stripe, not your server)
-   → Stripe processes payment
-
-3. PAYMENT CONFIRMED
-   Stripe sends payment_intent.succeeded webhook
-   → Backend verifies signature
-   → Updates payment status to SUCCEEDED
-   → Updates listing status to SOLD
-   → Creates payout ledger entry
-   → Increases seller pending balance
-
-4. PAYOUT SCHEDULING
-   Backend checks payout schedule
-   → Creates Stripe payout to seller's connected account
-   → Payout status set to PENDING
-
-5. BANK TRANSFER
-   Stripe processes payout batch (on its schedule)
-   → Sends to seller's bank via ACH/Wire
-   → Bank receives and deposits
-
-6. PAYOUT CONFIRMED
-   Stripe sends payout.paid webhook
-   → Backend marks payout as PAID
-   → Moves funds from pending to available balance
-   → Seller sees deposit in app
-
-7. CYCLE REPEATS
-   Seller can now list more items or request new payout
-```
+iOS app talks HTTPS REST + JWT to a Node.js / Express / Prisma backend. The backend talks to **Stripe** for everything money-related: connected-account onboarding (`stripe.accounts`, `stripe.accountLinks`), payments (`stripe.paymentIntents` with `capture_method: 'manual'`, `application_fee_amount`, `transfer_data.destination`), and reads live seller balances/payouts on demand (`stripe.balance.retrieve`, `stripe.payouts.list`). Stripe pushes async state changes back to `POST /webhooks/stripe`, which is idempotent via a `StripeWebhookEvent` table keyed on `event.id`. Card details **never** touch our backend — the iOS app uses Stripe's PaymentSheet, which collects card data directly into Stripe.
 
 ---
 
-## 💾 Database Schema Quick Reference
+## 2. Diagram index
 
-### Core Tables
-
-**User**
-
-- `id`, `email`, `password_hash`, `full_name`, `student_id`
-
-**SellerProfile**
-
-- `id`, `user_id`, `stripe_connect_account_id`
-- `connect_status` (PENDING, ACTIVE, RESTRICTED)
-- `charges_enabled`, `payouts_enabled`, `identity_verified`, `bank_verified`
-
-**Listing**
-
-- `id`, `seller_id`, `name`, `price`, `status` (AVAILABLE, SOLD, ARCHIVED)
-- `category_id`, `description`, `condition`, `images`
-
-**Payment**
-
-- `id`, `buyer_id`, `listing_id`, `seller_id`
-- `stripe_payment_intent_id`, `amount`, `platform_fee`, `seller_amount`
-- `status` (PENDING, SUCCEEDED, FAILED, REFUNDED)
-
-**PayoutLedger**
-
-- `id`, `seller_id`, `stripe_payout_id`, `amount`
-- `status` (PENDING, PAID, FAILED)
-- Tracks all seller payouts
-
-**SellerBalance**
-
-- `id`, `seller_id`
-- `pending_balance` (waiting for payout)
-- `available_balance` (already paid to bank)
-- `total_earned` (lifetime total)
+| File | What it covers |
+|---|---|
+| `marketplace-er-diagram.puml` | Database entities & relationships (final shape) |
+| `01-seller-onboarding-flow.puml` | Express onboarding via AccountLink → `account.updated` webhook |
+| `02-buyer-checkout-flow.puml` | `POST /checkout` → PaymentIntent → PaymentSheet → auth captured-pending |
+| `03-money-distribution-flow.puml` | Buyer confirms receipt → capture → Stripe auto-payout |
+| `04-webhook-processing-flow.puml` | Every Stripe event we handle, with idempotency |
+| `05-seller-receiving-money-flow.puml` | Seller's-eye view of when/where money lands |
+| `06-seller-status-state-diagram.puml` | `SellerProfile.connectStatus` lifecycle |
+| `07-architecture-overview.puml` | All components in one picture |
+| `08-complete-transaction-dataflow.puml` | End-to-end checkout → bank deposit |
 
 ---
 
-## 🔐 Security Considerations
+## 3. Why this design (key decisions)
 
-### What Your App Stores
+### 3.1 Destination charges, not Separate Charges & Transfers
+We create **one** PaymentIntent that does everything atomically:
+```ts
+stripe.paymentIntents.create({
+  amount: amountSatang, currency: 'thb',
+  capture_method: 'manual',
+  payment_method_types: ['card', 'promptpay'],
+  application_fee_amount: platformFeeSatang,
+  transfer_data: { destination: sellerStripeAcctId },
+  on_behalf_of: sellerStripeAcctId,
+  metadata: { listingId, buyerId },
+});
+```
+Stripe routes `amount - applicationFee` to the seller's connected-account balance and retains `applicationFee` on the platform side. **We never call `stripe.transfers.create` or `stripe.payouts.create`.** Stripe automatically pays out the seller's connected-account balance to their Thai bank on its T+7 schedule.
 
-✅ Stripe IDs (paymentIntentId, stripeConnectAccountId, payoutId)
-✅ Status flags (PENDING, SUCCEEDED, PAID, etc.)
-✅ Amounts and fee calculations
-✅ User information (email, name, student ID)
+### 3.2 Manual capture (escrow-shaped)
+`capture_method: 'manual'` means the buyer's card is **authorized** but not charged at checkout. The actual money movement happens when **the buyer taps "Confirm Receipt"** in the app after pickup, which calls `stripe.paymentIntents.capture(...)`. If the seller never shows up:
+- Within ~6 days: buyer (or admin, or a background job) cancels the PI → listing returns to `AVAILABLE` → buyer's card is never charged.
+- After ~7 days: the card auth expires automatically; we cancel the PI in the same hourly job.
 
-### What Your App NEVER Stores
+This means the platform **never holds customer funds** and disputes are rare.
 
-❌ Full credit card numbers
-❌ CVV or card PINs
-❌ Bank account numbers (Stripe handles this)
-❌ Raw sensitive payout credentials
+### 3.3 Live balances, not local mirrors
+Earlier drafts had a `SellerBalance` table with `pending_balance` / `available_balance` updated on every webhook. We **dropped that**. A missed or out-of-order webhook would permanently desync those numbers. Instead:
+- For the seller wallet UI: backend calls `stripe.balance.retrieve({ stripeAccount })` live.
+- For payout history: backend calls `stripe.payouts.list({ stripeAccount })` live.
+- We only store **lifetime totals** (`totalEarnedSatang`, `totalPaidOutSatang`) on `SellerProfile` for analytics.
 
-### Webhook Security
+### 3.4 Idempotent webhooks
+Stripe retries webhooks aggressively. Every handler:
+1. Verifies `stripe-signature` against `STRIPE_WEBHOOK_SECRET` using the **raw** request body.
+2. `INSERT INTO StripeWebhookEvent (id, type, payload)` where `id = event.id`. A unique-violation = "we already processed this" → return 200 immediately.
+3. Mutates state in the **same DB transaction** as the insert.
 
-- Always verify Stripe webhook signature before processing
-- Use `STRIPE_WEBHOOK_SECRET` from environment variables
-- Reject unsigned webhooks with 400 error
-- Log all webhook events for debugging
+### 3.5 Currency: THB satang, end-to-end
+Stripe represents THB in **satang** (1 THB = 100 satang). Every money column in our DB is `Int` (or `BigInt` for lifetime totals) and named with the `Satang` suffix. **Never use floats.**
+
+### 3.6 Listing race protection
+`POST /checkout` runs in a Prisma transaction with `SELECT … FOR UPDATE`:
+1. Lock the listing row.
+2. Assert `status == AVAILABLE`, `buyer != seller`, seller `payoutsEnabled`.
+3. Create the PaymentIntent.
+4. Set listing `status = WAITING_FOR_PAYMENT`, `currentPaymentIntentId = pi.id`.
+5. Insert `Payment`.
+6. COMMIT.
+
+Two concurrent buyers can't both reach step 3 because step 1 blocks.
 
 ---
 
-## 🚀 Implementation Checklist
+## 4. The full state machine
 
-### Seller Onboarding
-
-- [ ] Create SellerProfile table with Stripe account tracking
-- [ ] Implement `POST /seller/onboard` endpoint
-- [ ] Generate Stripe onboarding link
-- [ ] Handle onboarding redirect callback
-- [ ] Listen for `account.updated` webhook
-
-### Buyer Checkout
-
-- [ ] Implement `POST /checkout` endpoint
-- [ ] Validate listing availability
-- [ ] Create PaymentIntent on Stripe
-- [ ] Store pending payment in database
-- [ ] Return clientSecret to frontend
-
-### Webhook Processing
-
-- [ ] Setup Stripe webhook endpoint at `/webhooks/stripe`
-- [ ] Verify all webhook signatures
-- [ ] Handle payment_intent events
-- [ ] Handle payout events
-- [ ] Handle account update events
-
-### Payout Management
-
-- [ ] Create PayoutLedger table
-- [ ] Implement payout creation logic
-- [ ] Track payout status
-- [ ] Handle failed payouts
-- [ ] Update seller balance on success
-
----
-
-## 📝 Common Issues & Solutions
-
-### Issue: "Webhook signature verification failed"
-
-**Solution**:
-
-- Ensure `STRIPE_WEBHOOK_SECRET` is correct (from Stripe dashboard)
-- Check that you're using the raw request body (not parsed JSON)
-
-### Issue: "Payment succeeded but seller wasn't credited"
-
-**Solution**:
-
-- Check webhook logs - was the event received?
-- Verify seller's Stripe Connect account is ACTIVE
-- Check database for Payment and PayoutLedger records
-- Manually trigger webhook replay from Stripe dashboard
-
-### Issue: "Seller can't complete onboarding"
-
-**Solution**:
-
-- Check if stripeConnectAccountId was created
-- Verify Stripe onboarding link is valid
-- Check Stripe dashboard for account restrictions
-- Review identity verification requirements
-
-### Issue: "Payout stuck in PENDING status"
-
-**Solution**:
-
-- Check payout schedule in Stripe settings
-- Verify seller bank account is verified
-- Check for payout failures in Stripe dashboard
-- Review webhooks for payout.failed events
-
----
-
-## 🔄 State Transitions Reference
-
-### Seller States
+### 4.1 `SellerProfile.connectStatus`
 
 ```
-USER_REGISTERED
-  ↓
-SELLER_ONBOARDING_REQUESTED
-  ↓
-STRIPE_ACCOUNT_CREATED
-  ↓
-ONBOARDING_IN_PROGRESS ← → RESTRICTED
-  ↓
-ACTIVE ← ← ← (ready for transactions)
+NONE  ──onboarding→  PENDING  ──account.updated(ok)──→  ACTIVE
+                       │  ↑                                │
+                       ↓  │                                ↓
+                    RESTRICTED  ←──────────────────────────┘
+                       │
+                       ↓
+                    REJECTED  (terminal)
 ```
 
-### Payment States
+| State | charges | payouts | Can sell? |
+|---|---|---|---|
+| `NONE` | – | – | No (no Stripe account yet) |
+| `PENDING` | false | false | No |
+| `ACTIVE` | true | true | **Yes** |
+| `RESTRICTED` | varies | false | No (show requirements) |
+| `REJECTED` | false | false | No (terminal) |
+
+### 4.2 `Listing.status` during a sale
 
 ```
-PENDING (PaymentIntent created, awaiting confirmation)
-  ├→ SUCCEEDED (payment confirmed, funds credited)
-  ├→ FAILED (payment declined)
-  └→ REFUNDED (refund issued)
+AVAILABLE
+   ↓ POST /checkout
+WAITING_FOR_PAYMENT
+   ↓ payment_intent.amount_capturable_updated
+PAID                  ← authorized & locked, NO money has moved yet
+   ↓ (seller marks shipped / hands over)
+WAITING_FOR_PICKUP   (optional step depending on flow)
+   ↓ POST /listings/:id/confirm-receipt → stripe.paymentIntents.capture
+RECEIVED              ← funds captured: platform fee + seller net split atomically
+   ↓ buyer leaves review
+RATED → SOLD (terminal)
 ```
 
-### Payout States
+Failure / cancel paths return the listing to `AVAILABLE` and clear `currentPaymentIntentId`.
+
+### 4.3 `Payment.status` (mirrors Stripe's PaymentIntent.status, plus our terminal refund states)
 
 ```
-PENDING (created, waiting for Stripe schedule)
-  ├→ PAID (successfully deposited to bank)
-  └→ FAILED (bank account issue, needs manual intervention)
+REQUIRES_PAYMENT_METHOD
+   ├→ REQUIRES_ACTION          (3DS / SCA needed)
+   ├→ PROCESSING               (PromptPay async)
+   ├→ REQUIRES_CAPTURE         (card auth held — waiting for pickup)
+   │    ├→ SUCCEEDED           (captured)
+   │    └→ CANCELED            (no-show / expired auth)
+   ├→ FAILED                   (card declined)
+   └→ CANCELED                 (buyer canceled before auth)
+
+SUCCEEDED
+   ├→ PARTIALLY_REFUNDED
+   └→ REFUNDED
 ```
 
 ---
 
-## 📞 API Endpoints Reference
+## 5. Database schema additions
 
-### Seller Onboarding
+Brief sketch — see `marketplace-er-diagram.puml` for the full shape and `schema.prisma` for the real source of truth once implemented.
 
-- `POST /seller/onboard` - Initiate seller onboarding
-- `GET /seller/onboarding-status` - Check onboarding progress
-- `POST /seller/onboarding-refresh` - Refresh status from Stripe
+### New tables
+- **`SellerProfile`** — 1:1 with User. Holds `stripeConnectAccountId`, `connectStatus`, capability flags, requirement strings, and lifetime totals.
+- **`Payment`** — one row per checkout attempt. Holds Stripe IDs (`paymentIntent`, `charge`, `applicationFee`, `transfer`), the satang-denominated amounts, status, capture mode, and timestamps.
+- **`Refund`** — child of Payment, mirrors Stripe refund objects.
+- **`StripeWebhookEvent`** — idempotency table, PK = Stripe `event.id`.
 
-### Payments
+### Modified tables
+- **`Listing`** — adds `currentPaymentIntentId String?`. Reuses existing `ListingStatus` enum (no new values needed).
 
-- `POST /checkout` - Create PaymentIntent for purchase
-- `GET /payments` - List user's payments
-- `POST /payments/:id/refund` - Refund a payment
-
-### Payouts
-
-- `GET /seller/balance` - Get seller balance info
-- `GET /seller/payouts` - List seller payouts
-- `POST /seller/request-payout` - Manual payout request (if implemented)
-
-### Webhooks
-
-- `POST /webhooks/stripe` - Stripe webhook receiver
+### Not added
+- ❌ `SellerBalance` — Stripe is the source of truth.
+- ❌ `PayoutLedger` — fetched live from `stripe.payouts.list` when needed.
 
 ---
 
-## 🎯 Next Steps
+## 6. API surface
 
-1. **Review the diagrams** in order (ER diagram first)
-2. **Understand the state machine** (seller-status-state-diagram)
-3. **Implement the backend endpoints** following the flow diagrams
-4. **Setup webhook handling** with proper signature verification
-5. **Test with Stripe's test mode** before going live
-6. **Monitor webhook logs** in Stripe dashboard
+All endpoints below are mounted under the standard `/api` prefix and require JWT auth **except** `/webhooks/stripe`.
+
+### Seller onboarding (`/sellers`)
+| Method | Path | Description |
+|---|---|---|
+| POST | `/sellers/onboarding` | Create connected account (if absent) + AccountLink, return onboarding URL |
+| POST | `/sellers/onboarding/refresh` | Force re-pull from Stripe (in case a webhook was lost) |
+| GET  | `/sellers/me` | Current `SellerProfile` + `requirementsCurrentlyDue` |
+| GET  | `/sellers/me/balance` | Live `stripe.balance.retrieve` (proxied) |
+| GET  | `/sellers/me/payouts` | Live `stripe.payouts.list` (proxied) |
+
+### Payments (`/payments`)
+| Method | Path | Description |
+|---|---|---|
+| POST | `/checkout` | Body: `{ listingId }`. Returns `{ paymentIntentId, clientSecret, publishableKey }` |
+| GET  | `/payments` | List current user's payments (as buyer or seller) |
+| GET  | `/payments/:id` | Single payment detail |
+| POST | `/payments/:id/cancel` | Buyer cancels before capture |
+| POST | `/payments/:id/refund` | Seller or admin refunds after capture |
+| POST | `/listings/:id/confirm-receipt` | Buyer confirms receipt → triggers `paymentIntents.capture` |
+
+### Webhook
+| Method | Path | Description |
+|---|---|---|
+| POST | `/webhooks/stripe` | Stripe webhook receiver. **Mounted with `express.raw()` before `express.json()`.** |
 
 ---
 
-## 📚 Additional Resources
+## 7. Webhook events we handle
 
-- [Stripe Payment Intents API](https://stripe.com/docs/payments/payment-intents)
-- [Stripe Connect Documentation](https://stripe.com/docs/connect)
-- [Stripe Webhook Documentation](https://stripe.com/docs/webhooks)
-- [Stripe Testing](https://stripe.com/docs/testing)
+| Stripe event | What it means | What we do |
+|---|---|---|
+| `payment_intent.requires_action` | 3DS needed | `Payment.status = REQUIRES_ACTION` |
+| `payment_intent.processing` | PromptPay async pending | `Payment.status = PROCESSING` |
+| `payment_intent.amount_capturable_updated` | Card auth succeeded | `Payment.status = REQUIRES_CAPTURE`, `Listing.status = PAID` |
+| `payment_intent.succeeded` | Captured | `Payment.status = SUCCEEDED`, set `succeededAt` |
+| `payment_intent.payment_failed` | Declined | `Payment.status = FAILED`, free listing |
+| `payment_intent.canceled` | Canceled / expired | `Payment.status = CANCELED`, free listing |
+| `charge.succeeded` | Charge object materialized | Store `stripeChargeId` |
+| `charge.refunded` | Refund settled | Mark Payment refunded, upsert Refund rows |
+| `application_fee.refunded` | Platform fee returned | Mark `Refund.refundApplicationFee = true` |
+| `transfer.reversed` | Seller's portion clawed back | Decrement `totalEarnedSatang`, mark `Refund.reverseTransfer` |
+| `charge.dispute.created` | Chargeback | Freeze listing, admin alert |
+| `account.updated` | Connect account changed | Refresh `SellerProfile` flags + `requirementsCurrentlyDue` |
+| `payout.paid` (Connect) | Payout landed in bank | `totalPaidOutSatang += amount`, push notification |
+| `payout.failed` (Connect) | Payout failed | Admin alert + seller notification |
 
 ---
 
-**Last Updated**: May 2026
+## 8. Security
+
+### What we store
+✅ Stripe IDs (`pi_*`, `acct_*`, `ch_*`, `po_*`, `fee_*`, `tr_*`, `re_*`)
+✅ Status enums and amounts in satang
+✅ Lifetime aggregates (`totalEarnedSatang`, `totalPaidOutSatang`)
+
+### What we **never** store
+❌ Card PAN, CVV, expiry — PaymentSheet sends these straight to Stripe
+❌ Thai bank account numbers — Stripe Connect holds these
+❌ National ID / passport numbers — Stripe Identity holds these
+❌ Live balances — fetched live from Stripe each time
+
+### Webhook security
+- Raw body verification with `stripe.webhooks.constructEvent`.
+- `STRIPE_WEBHOOK_SECRET` env-only, never in code or logs.
+- Idempotency table prevents replay double-credit.
+- Non-2xx response on signature failure triggers Stripe's retry, which is the intended behavior — failed sig usually means a misconfigured environment, and the operator will see retries piling up.
+
+### Rate limiting
+- `/checkout` and `/sellers/onboarding`: tight limits (e.g. 10/min/user).
+- `/webhooks/stripe`: no app-level rate limit (Stripe controls this; we trust signed payloads).
+
+---
+
+## 9. Environment variables
+
+```bash
+STRIPE_SECRET_KEY=sk_test_…
+STRIPE_PUBLISHABLE_KEY=pk_test_…        # exposed to iOS app via bootstrap endpoint
+STRIPE_WEBHOOK_SECRET=whsec_…
+STRIPE_API_VERSION=2025-…               # pin explicitly in code, don't drift
+PLATFORM_FEE_BPS=500                    # 5% (basis points)
+STRIPE_CONNECT_RETURN_URL=cedtmkt://stripe/return
+STRIPE_CONNECT_REFRESH_URL=cedtmkt://stripe/refresh
+PAYMENT_AUTH_EXPIRE_HOURS=144           # ~6 days before stale-auth job cancels
+```
+
+---
+
+## 10. Thailand-specific constraints
+
+- **Currency**: Connected Thai accounts can be paid out **only in THB**. Cross-border payouts are not supported.
+- **Payout schedule**: T+7 business days (rolling). This is set by Stripe Thailand and not configurable to "instant".
+- **Payment methods worth enabling**: `card` (Visa / Mastercard / JCB) and `promptpay`. PromptPay is huge for Thai students and is fully async — handle the `processing` state in both the webhook and the iOS UI.
+- **3DS**: Most Thai-issued cards now require 3DS. PaymentSheet handles the challenge in-flow; backend just needs to handle the `requires_action` and `succeeded` events arriving in either order.
+
+---
+
+## 11. Implementation order
+
+1. ✅ Diagrams (`docs/PaymentDetail/*.puml`) — done.
+2. ✅ This guide — done.
+3. Prisma migration: `SellerProfile`, `Payment`, `Refund`, `StripeWebhookEvent`, `Listing.currentPaymentIntentId`.
+4. `stripe-service.ts` (SDK wrapper) + seller onboarding endpoints.
+5. Checkout + manual-capture endpoints.
+6. Webhook handler with idempotency.
+7. Refund / dispute / cron paths.
+8. **Hand off to frontend** — PaymentSheet on iOS, seller onboarding via `SFSafariViewController`.
+
+---
+
+## 12. Common issues & solutions
+
+### "Webhook signature verification failed"
+- Verify `STRIPE_WEBHOOK_SECRET` matches the endpoint in Stripe Dashboard.
+- Ensure `/webhooks/stripe` is registered with `express.raw({ type: 'application/json' })` **before** `express.json()`. JSON-parsed bodies fail verification.
+
+### "Payment succeeded but seller wasn't credited"
+- Verify `transfer_data.destination` was set correctly on the PaymentIntent (you can `stripe.paymentIntents.retrieve(id)` to confirm).
+- Verify seller's `connectStatus = ACTIVE`.
+- Check `transfer.created` was received and `Payment.stripeTransferId` is populated.
+
+### "Seller can't finish onboarding"
+- Check `requirementsCurrentlyDue` on `SellerProfile` — that's exactly what Stripe is waiting for.
+- Re-run `POST /sellers/onboarding` to get a fresh AccountLink (AccountLinks expire).
+
+### "Payout stuck"
+- Stripe TH payouts are T+7 business days. Check the connected account's payout schedule in Stripe Dashboard.
+- Check `payout.failed` webhook log; usually the seller's bank account needs re-verification.
+
+### "I want to test without real cards"
+- Use Stripe test mode (`sk_test_…`).
+- Cards: `4242 4242 4242 4242` (no 3DS), `4000 0027 6000 3184` (3DS required), see Stripe docs.
+- PromptPay test mode: a fake QR with a "pay" button in Stripe Dashboard.
+
+---
+
+## 13. References
+
+- [Stripe Connect — Build a marketplace](https://docs.stripe.com/connect/end-to-end-marketplace)
+- [Destination charges](https://docs.stripe.com/connect/destination-charges)
+- [Application fees](https://docs.stripe.com/connect/marketplace/tasks/app-fees)
+- [PaymentIntents API](https://docs.stripe.com/payments/payment-intents)
+- [Stripe Thailand: marketplace support](https://support.stripe.com/questions/stripe-thailand-support-for-marketplaces)
+- [Stripe Thailand: payout schedule & currency](https://support.stripe.com/questions/payout-schedule-and-currency-for-stripe-accounts-in-thailand)
+- [Stripe Thailand: supported methods](https://support.stripe.com/questions/supported-payment-methods-currencies-and-businesses-for-stripe-accounts-in-thailand)
+
+---
+
+**Last updated**: 2026-05-14
 **Project**: CEDT Marketplace
-**Version**: 1.0
+**Doc version**: 2.0 (post-redesign)

@@ -3,36 +3,62 @@
 !define DECISION_COLOR #FFFFB4
 !define ENDPOINT_COLOR #C8E6C9
 
-start
-:Seller registers in app;
-:Seller taps Become a Seller;
-:Backend checks if seller has\nstripeConnectAccountId;
+' Stripe Connect Express onboarding for Thai sellers.
+' Thailand: payouts in THB only, on a T+7 business-day rolling schedule.
 
-if (Has stripeConnectAccountId?) then (No)
-  :Backend creates\nStripe Connect account;
-  :Store stripeConnectAccountId\nin database;
+start
+:Seller registers (User row created);
+:Seller taps "Become a Seller";
+:POST /sellers/onboarding;
+
+if (SellerProfile exists?) then (No)
+  :Create SellerProfile row\nconnectStatus = NONE;
 else (Yes)
-  :Skip account creation;
 endif
 
-:Create Stripe onboarding\naccount link;
-:Return onboarding URL\nto frontend;
-:Frontend opens Stripe\nonboarding page;
-:Seller enters identity info\n(name, DOB, SSN);
-:Seller enters bank account\ndetails;
-:Stripe verifies identity\nand bank details;
-
-if (Stripe account verified?) then (No)
-  :Return error to seller;
-  :Seller must fix missing info;
-  :Retry onboarding;
+if (stripeConnectAccountId exists?) then (No)
+  :stripe.accounts.create({\n  type: 'express',\n  country: 'TH',\n  capabilities: { card_payments, transfers },\n  business_type: 'individual'\n});
+  :Persist stripeConnectAccountId\nconnectStatus = PENDING;
 else (Yes)
-  :Update seller status = ACTIVE;
-  :Update chargesEnabled = true;
-  :Update payoutsEnabled = true;
-  :Webhook updates\ndatabase state;
-  :Seller can now receive payouts;
+endif
+
+:stripe.accountLinks.create({\n  account, type: 'account_onboarding',\n  refresh_url, return_url\n});
+:Return onboarding URL to frontend;
+:Frontend opens Stripe-hosted onboarding\n(SFSafariViewController on iOS);
+
+:Seller submits identity\n(name, DOB, Thai ID / passport);
+:Seller submits Thai bank account\n(THB payout destination);
+:Stripe runs verification\n(KYC + bank check);
+
+:Stripe fires webhook: account.updated;
+:Webhook handler refreshes SellerProfile:
+  chargesEnabled
+  payoutsEnabled
+  detailsSubmitted
+  requirementsDisabledReason
+  requirementsCurrentlyDue[];
+
+if (chargesEnabled && payoutsEnabled?) then (Yes)
+  :connectStatus = ACTIVE;
+  :Seller can now be a destination\nfor PaymentIntents;
+  stop
+else (No)
+  if (requirementsDisabledReason set?) then (Yes)
+    :connectStatus = RESTRICTED;
+    :Surface requirementsCurrentlyDue\nin app ("upload your ID");
+    :Seller re-enters onboarding\n→ loop back to AccountLink;
+  else (No)
+    :connectStatus = PENDING\n(Stripe still verifying);
+    :Frontend polls GET /sellers/me\nor waits for next account.updated;
+  endif
   stop
 endif
+
+note right
+  We never call stripe.payouts.create.
+  In destination-charge mode, Stripe
+  auto-pays the connected account on
+  its own T+7 (TH) schedule.
+end note
 
 @enduml

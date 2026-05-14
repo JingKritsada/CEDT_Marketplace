@@ -27,6 +27,32 @@ enum ListingCondition {
     POOR
 }
 
+enum SellerConnectStatus {
+    NONE
+    PENDING
+    ACTIVE
+    RESTRICTED
+    REJECTED
+}
+
+enum PaymentStatus {
+    REQUIRES_PAYMENT_METHOD
+    REQUIRES_ACTION
+    PROCESSING
+    REQUIRES_CAPTURE
+    SUCCEEDED
+    CANCELED
+    FAILED
+    REFUNDED
+    PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+    PENDING
+    SUCCEEDED
+    FAILED
+}
+
 model User {
     id            String         @id @default(cuid())
     studentId     String?        @unique
@@ -45,6 +71,9 @@ model User {
     reviewsWritten Review[]       @relation("ReviewerReviews")
     reviewsReceived Review[]      @relation("SellerReviews")
     carts         Cart[]
+    sellerProfile    SellerProfile?
+    paymentsAsBuyer  Payment[]      @relation("BuyerPayments")
+    paymentsAsSeller Payment[]      @relation("SellerPayments")
 }
 
 model Category {
@@ -80,6 +109,7 @@ model Listing {
     categoryId       String?
     pickupLocationId String?
     images           String[]
+    currentPaymentIntentId String?
     createdAt        DateTime         @default(now())
     updatedAt        DateTime         @updatedAt
     seller           User             @relation("SellerListings", fields: [sellerId], references: [id], onDelete: Cascade)
@@ -88,11 +118,90 @@ model Listing {
     pickupLocation   PickupLocation?  @relation(fields: [pickupLocationId], references: [id], onDelete: SetNull)
     reviews          Review[]
     cartItems        CartItem[]
+    payments         Payment[]
 
     @@index([sellerId])
     @@index([buyerId])
     @@index([status])
     @@index([courseCode])
+    @@index([currentPaymentIntentId])
+}
+
+model SellerProfile {
+    id                         String              @id @default(cuid())
+    userId                     String              @unique
+    stripeConnectAccountId     String?             @unique
+    connectStatus              SellerConnectStatus @default(NONE)
+    chargesEnabled             Boolean             @default(false)
+    payoutsEnabled             Boolean             @default(false)
+    detailsSubmitted           Boolean             @default(false)
+    requirementsDisabledReason String?
+    requirementsCurrentlyDue   String[]
+    defaultPayoutCurrency      String              @default("thb")
+    totalEarnedSatang          BigInt              @default(0)
+    totalPaidOutSatang         BigInt              @default(0)
+    createdAt                  DateTime            @default(now())
+    updatedAt                  DateTime            @updatedAt
+    user                       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+    id                     String        @id @default(cuid())
+    buyerId                String
+    sellerId               String
+    listingId              String
+    stripePaymentIntentId  String        @unique
+    stripeChargeId         String?
+    stripeApplicationFeeId String?
+    stripeTransferId       String?
+    amountSatang           Int
+    platformFeeSatang      Int
+    sellerNetSatang        Int
+    currency               String        @default("thb")
+    status                 PaymentStatus @default(REQUIRES_PAYMENT_METHOD)
+    paymentMethodType      String?
+    captureMethod          String        @default("manual")
+    capturedAt             DateTime?
+    succeededAt            DateTime?
+    canceledAt             DateTime?
+    failureCode            String?
+    failureMessage         String?
+    metadata               Json?
+    createdAt              DateTime      @default(now())
+    updatedAt              DateTime      @updatedAt
+    buyer                  User          @relation("BuyerPayments", fields: [buyerId], references: [id], onDelete: Cascade)
+    seller                 User          @relation("SellerPayments", fields: [sellerId], references: [id], onDelete: Cascade)
+    listing                Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+    refunds                Refund[]
+
+    @@index([buyerId])
+    @@index([sellerId])
+    @@index([listingId])
+    @@index([status])
+}
+
+model Refund {
+    id                   String       @id @default(cuid())
+    paymentId            String
+    stripeRefundId       String       @unique
+    amountSatang         Int
+    reason               String?
+    status               RefundStatus @default(PENDING)
+    reverseTransfer      Boolean      @default(false)
+    refundApplicationFee Boolean      @default(false)
+    createdAt            DateTime     @default(now())
+    payment              Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+    @@index([paymentId])
+}
+
+model StripeWebhookEvent {
+    id          String   @id
+    type        String
+    payload     Json
+    processedAt DateTime @default(now())
+
+    @@index([type])
 }
 
 model RefreshToken {

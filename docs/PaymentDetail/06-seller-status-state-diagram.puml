@@ -1,97 +1,58 @@
 @startuml seller-status-state-diagram
-!define STATE_START #90EE90
-!define STATE_PROCESS #87CEEB
-!define STATE_ACTIVE #FFD700
-!define STATE_ERROR #FF6B6B
 
-[*] --> USER_REGISTERED
+' SellerProfile.connectStatus lifecycle.
+' Per-payment lifecycle is tracked on Payment.status, not here, to avoid
+' confusing "seller account state" with "single transaction state".
 
-USER_REGISTERED --> SELLER_ONBOARDING_REQUESTED : User taps\nBecome a Seller
+[*] --> NONE : User row created\n(no SellerProfile yet)
 
-SELLER_ONBOARDING_REQUESTED --> STRIPE_ACCOUNT_CREATED : Backend creates\nStripe Connect account
+NONE --> PENDING : POST /sellers/onboarding\n→ stripe.accounts.create()\n+ stripe.accountLinks.create()
 
-STRIPE_ACCOUNT_CREATED --> ONBOARDING_IN_PROGRESS : Stripe sends\nonboarding link
+PENDING --> PENDING : Seller opens onboarding link\nbut hasn't submitted
 
-ONBOARDING_IN_PROGRESS --> ACTIVE : Seller completes all\nverification steps
+PENDING --> RESTRICTED : webhook account.updated\nrequirements.disabled_reason set\n(missing ID / failed KYC)
 
-ONBOARDING_IN_PROGRESS --> RESTRICTED : Stripe detects\nincomplete/suspicious data
+PENDING --> ACTIVE : webhook account.updated\nchargesEnabled && payoutsEnabled
 
-RESTRICTED --> ONBOARDING_IN_PROGRESS : Seller fixes\nMissing information
+RESTRICTED --> PENDING : Seller re-opens onboarding link\nand resubmits
 
-ACTIVE --> PAYMENT_PENDING : Buyer initiates\ncheckout
+RESTRICTED --> REJECTED : Stripe permanently disables\n(disabled_reason = "rejected.*")
 
-PAYMENT_PENDING --> PAYMENT_SUCCEEDED : Payment confirmed\nby Stripe
+ACTIVE --> RESTRICTED : New requirement added\n(e.g. tax info due in N days)\nfuture_requirements becomes currently_due
 
-PAYMENT_PENDING --> PAYMENT_FAILED : Payment declined
+ACTIVE --> ACTIVE : Sell, get paid, get paid out\n(transaction lifecycle on Payment)
 
-PAYMENT_FAILED --> PAYMENT_PENDING : Buyer retries
+REJECTED --> [*]
 
-PAYMENT_SUCCEEDED --> SELLER_PENDING_PAYOUT : Backend creates\npayout record
-
-SELLER_PENDING_PAYOUT --> SELLER_PAID : Stripe sends funds\nto seller bank
-
-SELLER_PENDING_PAYOUT --> PAYOUT_FAILED : Stripe encounters\npayout error
-
-PAYOUT_FAILED --> SELLER_PENDING_PAYOUT : Backend retries\nor manual intervention
-
-SELLER_PAID --> ACTIVE : Cycle complete,\nready for next sale
-
-ACTIVE --> ACTIVE : [Multiple transactions]
-
-note right of USER_REGISTERED
-  User just registered
-  No seller status yet
+note right of NONE
+  No Stripe connected account yet.
+  Seller can browse, buy, list as free —
+  cannot accept paid orders.
 end note
 
-note right of SELLER_ONBOARDING_REQUESTED
-  User wants to enable payouts
-  Create Stripe Connect account
-end note
-
-note right of ONBOARDING_IN_PROGRESS
-  Seller entering personal & bank info
-  Stripe is verifying identity
+note right of PENDING
+  Stripe account exists.
+  chargesEnabled / payoutsEnabled = false.
+  We MUST block /checkout against this seller.
 end note
 
 note right of ACTIVE
-  Seller verified ✓
-  Charges enabled ✓
-  Payouts enabled ✓
-  Ready to receive payments
+  chargesEnabled = true
+  payoutsEnabled = true
+  detailsSubmitted = true
+  requirementsCurrentlyDue = []
+  → can be a destination on PaymentIntents.
 end note
 
 note right of RESTRICTED
-  Seller has incomplete/rejected info
-  Cannot receive payments yet
-  Must complete onboarding
+  Live account but capability paused.
+  Surface requirementsCurrentlyDue
+  in the UI so seller knows what to fix.
 end note
 
-note right of PAYMENT_PENDING
-  PaymentIntent created
-  Awaiting buyer card confirmation
-end note
-
-note right of PAYMENT_SUCCEEDED
-  Stripe confirmed payment
-  Funds moving to seller account
-end note
-
-note right of SELLER_PENDING_PAYOUT
-  Funds pending payout
-  On Stripe payout schedule
-  (daily/weekly/monthly)
-end note
-
-note right of SELLER_PAID
-  Funds arrived in seller bank
-  Payout completed
-  Ready for next transaction
-end note
-
-note right of PAYOUT_FAILED
-  Stripe failed to deposit
-  Usually: bank account issue
-  Seller must update bank info
+note right of REJECTED
+  Terminal. Stripe will not reinstate.
+  Admin intervention or new account needed.
 end note
 
 @enduml

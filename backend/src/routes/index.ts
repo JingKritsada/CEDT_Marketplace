@@ -8,6 +8,8 @@ import { pickupLocationRouter } from "./pickup-location-route.js";
 import { cartRouter } from "./cart-route.js";
 import { reviewRouter } from "./review-route.js";
 import { uploadRouter } from "./upload-route.js";
+import { sellerOnboardingRouter } from "./seller-onboarding-route.js";
+import { checkoutRouter, paymentRouter } from "./payment-route.js";
 
 export const apiRouter = Router();
 
@@ -19,3 +21,6 @@ apiRouter.use("/users", userRouter);
 apiRouter.use("/cart", cartRouter);
 apiRouter.use("/reviews", reviewRouter);
 apiRouter.use("/uploads", uploadRouter);
+apiRouter.use("/sellers", sellerOnboardingRouter);
+apiRouter.use("/payments", paymentRouter);
+apiRouter.use("/checkout", checkoutRouter);

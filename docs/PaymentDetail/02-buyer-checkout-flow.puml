@@ -3,77 +3,112 @@
 !define BACKEND_COLOR #E1F5FF
 !define STRIPE_COLOR #FFE082
 
-participant Frontend as "Frontend\n(iOS App)"
-participant Backend as "Backend\n(Node.js)"
-participant Stripe as "Stripe\nAPI"
-participant Webhook as "Webhook\nListener"
-participant Database as "Database"
+' Manual-capture, destination-charge flow for an in-person pickup marketplace.
+' Buyer's card is AUTHORIZED at checkout; funds are CAPTURED only when the
+' buyer confirms receipt at pickup. Avoids paying a seller who never shows up.
 
-Frontend -> Backend: POST /checkout\n(listingId, buyerId)
+participant Frontend  as "Frontend\n(iOS PaymentSheet)"
+participant Backend   as "Backend\n(Node.js)"
+participant Stripe    as "Stripe API"
+participant Webhook   as "Backend\nWebhook handler"
+participant DB        as "Postgres"
+
+== 1. Buyer initiates checkout ==
+
+Frontend -> Backend: POST /checkout { listingId }
 activate Backend
 
-Backend -> Database: Check if listing exists\nand is AVAILABLE
-activate Database
-Database --> Backend: Listing status
-deactivate Database
+Backend -> DB: BEGIN TX\nSELECT listing FOR UPDATE\n+ load seller.SellerProfile
+activate DB
+DB --> Backend: listing + sellerProfile
+deactivate DB
 
-Backend -> Backend: Validate listing price\nValidate buyer eligibility\nCheck buyer != seller
+Backend -> Backend: Validate:\n - listing.status == AVAILABLE\n - buyerId != sellerId\n - seller.payoutsEnabled == true\n - seller.chargesEnabled == true\n - price > 0 && !isFree
 
-alt Validation Failed
-  Backend --> Frontend: Error: Cannot purchase
+alt Any validation fails
+  Backend -> DB: ROLLBACK
+  Backend --> Frontend: 4xx { error }
   deactivate Backend
 end
 
-Backend -> Backend: Calculate final amount\n(in smallest currency unit)
+Backend -> Backend: platformFee = floor(amount * PLATFORM_FEE_BPS / 10000)
 
-Backend -> Stripe: Create PaymentIntent\n(amount, sellerId, metadata)
+Backend -> Stripe: paymentIntents.create({\n  amount: amountSatang, currency: 'thb',\n  capture_method: 'manual',\n  payment_method_types: ['card','promptpay'],\n  application_fee_amount: platformFee,\n  transfer_data: { destination: stripeConnectAccountId },\n  on_behalf_of: stripeConnectAccountId,\n  metadata: { listingId, buyerId }\n})
 activate Stripe
-Stripe --> Backend: PaymentIntent\n(clientSecret)
+Stripe --> Backend: PaymentIntent { id, client_secret,\n  status: 'requires_payment_method' }
 deactivate Stripe
 
-Backend -> Database: Create pending payment record\n(stripe_payment_intent_id,\nstatus=PENDING)
-activate Database
-Database --> Backend: Payment record created
-deactivate Database
+Backend -> DB: INSERT Payment (status=REQUIRES_PAYMENT_METHOD,\n  stripePaymentIntentId, amounts...)\nUPDATE Listing SET status=WAITING_FOR_PAYMENT,\n  currentPaymentIntentId\nCOMMIT
+activate DB
+DB --> Backend: ok
+deactivate DB
 
-Backend --> Frontend: Return clientSecret
-
+Backend --> Frontend: { clientSecret, publishableKey, paymentIntentId }
 deactivate Backend
 
-Frontend -> Stripe: Present Stripe payment UI\n(card entry, etc)
-activate Stripe
-Stripe -> Frontend: Customer enters card details
-Frontend -> Stripe: Confirm payment\n(clientSecret)
-Stripe --> Frontend: Payment confirmation
+== 2. Buyer pays ==
 
-alt Payment Succeeded
-  Stripe -> Webhook: Send payment_intent.succeeded
-  activate Webhook
-  Webhook -> Database: Verify signature
-  activate Database
-  Webhook -> Database: Find payment by\nstripe_payment_intent_id
-  Database --> Webhook: Payment record
-  Webhook -> Database: Mark payment = SUCCEEDED
-  Webhook -> Database: Update listing status = SOLD
-  Webhook -> Database: Update seller balance
-  Database --> Webhook: Done
-  deactivate Database
-  deactivate Webhook
-  
-  Stripe --> Frontend: Success
-  deactivate Stripe
-  Frontend -> Frontend: Show success screen
-else Payment Failed
-  Stripe --> Frontend: Payment failed error
-  deactivate Stripe
-  
-  Stripe -> Webhook: Send payment_intent.payment_failed
-  activate Webhook
-  Webhook -> Database: Mark payment = FAILED
-  Database --> Webhook: Done
-  deactivate Webhook
-  
-  Frontend -> Frontend: Show error message
+Frontend -> Stripe: PaymentSheet.present()\n(card or PromptPay)
+activate Stripe
+
+alt Card (3DS may be required)
+  Stripe -> Stripe: SCA / 3DS challenge if needed
+  Stripe --> Frontend: requires_action → handled in-sheet
 end
+
+alt PromptPay (async)
+  Stripe --> Frontend: status=processing\n(QR shown, buyer pays via banking app)
+  note over Frontend
+    Frontend should NOT show "success"
+    until webhook flips the Payment.
+    Show "Waiting for bank confirmation…"
+  end note
+end
+
+Stripe --> Frontend: confirm complete (auth captured-pending)
+deactivate Stripe
+
+== 3. Stripe → backend (async, source of truth) ==
+
+Stripe -> Webhook: payment_intent.requires_action
+Webhook -> DB: idempotent upsert + Payment.status = REQUIRES_ACTION
+
+Stripe -> Webhook: payment_intent.processing  (PromptPay)
+Webhook -> DB: Payment.status = PROCESSING
+
+Stripe -> Webhook: payment_intent.amount_capturable_updated\n(or payment_intent.succeeded for auto-capture)
+activate Webhook
+Webhook -> Webhook: verify stripe-signature\nINSERT StripeWebhookEvent(id=event.id) — dedupe
+Webhook -> DB: Payment.status = REQUIRES_CAPTURE\n              Listing.status = PAID\n              (funds AUTHORIZED, not yet captured)
+deactivate Webhook
+
+Frontend -> Frontend: Poll GET /payments/:id\nor open via deep link to pickup screen
+
+== 4. Failure paths ==
+
+alt payment_intent.payment_failed
+  Stripe -> Webhook: payment_intent.payment_failed
+  Webhook -> DB: Payment.status = FAILED\n              Listing.status = AVAILABLE (released)\n              listing.currentPaymentIntentId = null
+end
+
+alt buyer cancels before capture
+  Frontend -> Backend: POST /payments/:id/cancel
+  Backend -> Stripe: paymentIntents.cancel(id)
+  Backend -> DB: Payment.status = CANCELED\n              Listing.status = AVAILABLE
+end
+
+alt auth expires (~7 days, never captured)
+  note over Backend
+    Scheduled job: every hour, cancel PIs older
+    than 6 days still in REQUIRES_CAPTURE.
+    Card auths drop off after ~7 days anyway.
+  end note
+end
+
+note over Webhook
+  Capture is NOT triggered here.
+  See 03-money-distribution-flow for the
+  buyer-confirms-receipt → capture step.
+end note
 
 @enduml

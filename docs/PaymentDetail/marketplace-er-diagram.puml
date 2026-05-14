@@ -2,151 +2,183 @@
 !define ENTITY_COLOR #FFE4E1
 !define RELATIONSHIP_COLOR #E1F5FF
 
+' NOTE: All money fields are stored in the smallest currency unit (THB satang = 1/100 THB).
+' Stripe's PaymentIntent.amount for THB is also in satang.
+
 entity "User" as user {
-  *id : UUID
+  *id : String (cuid)
   --
-  email : String
-  password_hash : String
-  full_name : String
-  student_id : String
-  created_at : DateTime
-  updated_at : DateTime
+  email : String <<unique>>
+  passwordHash : String
+  displayName : String
+  studentId : String? <<unique>>
+  avatarUrl : String?
+  lineId : String?
+  instagram : String?
+  facebookUrl : String?
+  createdAt : DateTime
+  updatedAt : DateTime
 }
 
 entity "SellerProfile" as seller {
-  *id : UUID
-  user_id : UUID <<FK>>
+  *id : String (cuid)
+  userId : String <<FK User.id, unique>>
   --
-  stripe_connect_account_id : String
-  connect_status : Enum [PENDING, ACTIVE, RESTRICTED]
-  charges_enabled : Boolean
-  payouts_enabled : Boolean
-  identity_verified : Boolean
-  bank_verified : Boolean
-  created_at : DateTime
-  updated_at : DateTime
+  stripeConnectAccountId : String? <<unique>>
+  connectStatus : Enum [NONE, PENDING, ACTIVE, RESTRICTED, REJECTED]
+  chargesEnabled : Boolean
+  payoutsEnabled : Boolean
+  detailsSubmitted : Boolean
+  requirementsDisabledReason : String?
+  requirementsCurrentlyDue : String[]
+  defaultPayoutCurrency : String  // 'thb' (Thailand: THB-only payouts)
+  totalEarnedSatang : BigInt      // analytics only; NOT a live balance
+  totalPaidOutSatang : BigInt     // analytics only
+  createdAt : DateTime
+  updatedAt : DateTime
 }
 
+note right of seller
+  Live "available" / "pending" balances live in Stripe,
+  not here. Fetch on demand via:
+    stripe.balance.retrieve({ stripeAccount })
+  Storing them locally drifts when a webhook is missed.
+end note
+
 entity "Listing" as listing {
-  *id : UUID
-  seller_id : UUID <<FK>>
+  *id : String (cuid)
+  sellerId : String <<FK User.id>>
+  buyerId : String? <<FK User.id>>
   --
-  name : String
+  title : String
   description : String
-  category_id : UUID <<FK>>
-  price : Integer
-  status : Enum [AVAILABLE, SOLD, ARCHIVED]
-  condition : String
-  images : Array
-  created_at : DateTime
-  updated_at : DateTime
+  price : Int                   // satang
+  isFree : Boolean
+  status : Enum [AVAILABLE, RESERVED, WAITING_FOR_PAYMENT,
+                 PAID, WAITING_FOR_PICKUP, SENT,
+                 RECEIVED, RATED, SOLD]
+  condition : Enum [NEW, LIKE_NEW, GOOD, FAIR, POOR]
+  courseCode : String?
+  categoryId : String? <<FK>>
+  pickupLocationId : String? <<FK>>
+  images : String[]
+  currentPaymentIntentId : String?   // active PI while in WAITING_FOR_PAYMENT/PAID
+  createdAt : DateTime
+  updatedAt : DateTime
 }
 
 entity "Payment" as payment {
-  *id : UUID
-  buyer_id : UUID <<FK>>
-  listing_id : UUID <<FK>>
-  seller_id : UUID <<FK>>
+  *id : String (cuid)
+  buyerId : String <<FK User.id>>
+  sellerId : String <<FK User.id>>
+  listingId : String <<FK>>
   --
-  stripe_payment_intent_id : String
-  amount : Integer
-  platform_fee : Integer
-  seller_amount : Integer
-  status : Enum [PENDING, SUCCEEDED, FAILED, REFUNDED]
-  payment_method : String
-  created_at : DateTime
-  completed_at : DateTime
+  stripePaymentIntentId : String <<unique>>
+  stripeChargeId : String?
+  stripeApplicationFeeId : String?
+  stripeTransferId : String?         // destination transfer id
+  amountSatang : Int                 // gross paid by buyer
+  platformFeeSatang : Int            // application_fee_amount
+  sellerNetSatang : Int              // amount - fee (auto-routed by Stripe)
+  currency : String                  // 'thb'
+  status : Enum [REQUIRES_PAYMENT_METHOD, REQUIRES_ACTION,
+                 PROCESSING, REQUIRES_CAPTURE,
+                 SUCCEEDED, CANCELED, FAILED,
+                 REFUNDED, PARTIALLY_REFUNDED]
+  paymentMethodType : String?        // 'card' | 'promptpay'
+  captureMethod : String             // 'manual' (default) | 'automatic'
+  capturedAt : DateTime?
+  succeededAt : DateTime?
+  canceledAt : DateTime?
+  failureCode : String?
+  failureMessage : String?
+  metadata : Json?
+  createdAt : DateTime
+  updatedAt : DateTime
 }
 
-entity "PayoutLedger" as payout_ledger {
-  *id : UUID
-  seller_id : UUID <<FK>>
+entity "Refund" as refund {
+  *id : String (cuid)
+  paymentId : String <<FK>>
   --
-  stripe_payout_id : String
-  amount : Integer
-  status : Enum [PENDING, PAID, FAILED]
-  payout_date : DateTime
-  payment_ids : Array
-  created_at : DateTime
-  completed_at : DateTime
+  stripeRefundId : String <<unique>>
+  amountSatang : Int
+  reason : String?
+  status : Enum [PENDING, SUCCEEDED, FAILED]
+  reverseTransfer : Boolean          // also reversed seller's transfer?
+  refundApplicationFee : Boolean     // also refunded platform fee?
+  createdAt : DateTime
 }
 
-entity "SellerBalance" as seller_balance {
-  *id : UUID
-  seller_id : UUID <<FK>>
+entity "StripeWebhookEvent" as wh {
+  *id : String        // stripe event.id (e.g. evt_xxx) — natural PK for idempotency
   --
-  pending_balance : Integer
-  available_balance : Integer
-  total_earned : Integer
-  last_payout_id : UUID
-  updated_at : DateTime
+  type : String
+  payload : Json
+  processedAt : DateTime
 }
+
+note right of wh
+  Idempotency table. Webhook handler INSERTs first;
+  unique-violation = duplicate retry → return 200 immediately.
+end note
 
 entity "Category" as category {
-  *id : UUID
+  *id : String
   --
   name : String
-  description : String
-}
-
-entity "Review" as review {
-  *id : UUID
-  payment_id : UUID <<FK>>
-  reviewer_id : UUID <<FK>>
-  reviewee_id : UUID <<FK>>
-  --
-  rating : Integer
-  comment : String
-  created_at : DateTime
-}
-
-entity "Cart" as cart {
-  *id : UUID
-  user_id : UUID <<FK>>
-  --
-  created_at : DateTime
-  updated_at : DateTime
-}
-
-entity "CartItem" as cart_item {
-  *id : UUID
-  cart_id : UUID <<FK>>
-  listing_id : UUID <<FK>>
-  --
-  quantity : Integer
-  added_at : DateTime
+  slug : String <<unique>>
 }
 
 entity "PickupLocation" as pickup {
-  *id : UUID
-  seller_id : UUID <<FK>>
+  *id : String
   --
   name : String
-  address : String
-  latitude : Float
-  longitude : Float
+  building : String
+  description : String?
 }
 
-user ||--o{ seller : "has"
-seller ||--o{ listing : "creates"
-seller ||--o{ pickup : "manages"
-seller ||--o{ payout_ledger : "receives"
-seller ||--o{ seller_balance : "owns"
+note right of pickup
+  PickupLocations are SHARED buildings on campus,
+  not per-seller. No seller_id FK.
+end note
 
+entity "Review" as review {
+  *id : String
+  listingId : String <<FK>>
+  sellerId : String <<FK User.id>>
+  reviewerId : String <<FK User.id>>
+  --
+  rating : Int
+  comment : String?
+  createdAt : DateTime
+}
+
+entity "Cart" as cart {
+  *id : String
+  userId : String <<FK User.id, unique>>
+}
+
+entity "CartItem" as cart_item {
+  *id : String
+  cartId : String <<FK>>
+  listingId : String <<FK>>
+  --
+  quantity : Int
+}
+
+user ||--o| seller : "1:1 (optional)"
+user ||--o{ listing : "sells (User.id == Listing.sellerId)"
+user ||--o{ listing : "buys (User.id == Listing.buyerId)"
+user ||--o{ payment : "buyerId"
+user ||--o{ payment : "sellerId"
+listing ||--o{ payment : "1 listing, many attempts"
+payment ||--o{ refund : "may be refunded"
+listing }o--|| category : "belongs_to"
+listing }o--|| pickup : "pickup_at"
+listing ||--o{ review : "reviewed"
 user ||--o{ cart : "has"
 cart ||--o{ cart_item : "contains"
 cart_item }o--|| listing : "references"
-
-listing }o--|| category : "belongs_to"
-listing ||--o{ payment : "is_subject_of"
-
-user ||--o{ payment : "initiates"
-payment }o--|| seller : "pays_to"
-
-payment ||--o{ review : "generates"
-user ||--o{ review : "writes"
-
-payout_ledger }o--|| user : "belongs_to"
-seller_balance }o--|| seller : "tracks"
 
 @enduml

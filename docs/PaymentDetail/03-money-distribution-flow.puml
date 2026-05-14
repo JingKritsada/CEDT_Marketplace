@@ -3,103 +3,88 @@
 !define BACKEND_COLOR #E1F5FF
 !define BANK_COLOR #C8E6C9
 
-participant Stripe as "Stripe"
-participant Backend as "Backend"
-participant Database as "Database"
-participant Bank as "Seller Bank"
+' Destination charges + manual capture.
+' We DO NOT call stripe.payouts.create — Stripe runs payouts to the
+' connected account automatically on its T+7 (TH) schedule.
 
-Stripe -> Backend: Webhook: payment_intent.succeeded
+participant Buyer    as "Buyer (iOS)"
+participant Backend  as "Backend"
+participant Stripe   as "Stripe\n(platform + connected acct)"
+participant Webhook  as "Webhook handler"
+participant DB       as "Postgres"
+participant Bank     as "Seller's Thai bank"
+
+== Phase A: funds authorized, listing PAID, awaiting pickup ==
+
+note over Stripe
+  After webhook flow in diagram 02:
+   Payment.status = REQUIRES_CAPTURE
+   Listing.status = PAID
+   Funds: authorized on buyer's card,
+          NOT yet moved.
+end note
+
+== Phase B: buyer confirms receipt at pickup ==
+
+Buyer -> Backend: POST /listings/:id/confirm-receipt
 activate Backend
-
-Backend -> Backend: Verify Stripe signature\n(using webhook secret)
-
-Backend -> Database: Find payment record\nby stripe_paymentIntentId
-activate Database
-Database --> Backend: Payment record
-deactivate Database
-
-alt Payment Not Found
-  Backend -> Backend: Log error and return
-  deactivate Backend
-end
-
-Backend -> Database: Mark payment status = SUCCEEDED
-activate Database
-Database --> Backend: Confirmed
-deactivate Database
-
-Backend -> Backend: Calculate platform fee\n(e.g., 10% of amount)
-
-Backend -> Backend: Calculate seller net amount\n(total - platform fee)
-
-Backend -> Database: Update listing status = SOLD\nor PROCESSING
-activate Database
-Database --> Backend: Updated
-deactivate Database
-
-Backend -> Database: Create payout ledger entry\n(seller_id, amount, status=PENDING)
-activate Database
-Database --> Backend: Ledger entry created
-deactivate Database
-
-Backend -> Database: Update seller balance\n(increase pending_balance)
-activate Database
-Database --> Backend: Balance updated
-deactivate Database
-
-Backend -> Database: Update seller balance\n(increase total_earned)
-activate Database
-Database --> Backend: Balance updated
-deactivate Database
-
-Backend -> Backend: Check payout schedule\n(e.g., daily, weekly)
-
-alt Payout Schedule Not Ready
-  Backend -> Database: Keep funds in pending
-  activate Database
-  Database --> Backend: Done
-  deactivate Database
-  Backend -> Backend: Return
-  deactivate Backend
-end
-
-Backend -> Stripe: Create Stripe payout\n(to seller connected account,\namount, stripeConnectAccountId)
+Backend -> DB: SELECT listing FOR UPDATE\nassert status in {WAITING_FOR_PICKUP, SENT}\nload Payment by currentPaymentIntentId
+Backend -> Stripe: paymentIntents.capture(\n  paymentIntentId,\n  { amount_to_capture: amountSatang }\n)
 activate Stripe
-Stripe -> Stripe: Schedule payout\nbased on account settings
-Stripe --> Backend: Payout ID
+Stripe -> Stripe: Move funds:\n  - amountSatang charged to buyer\n  - platformFee  → platform balance\n  - sellerNet    → connected-acct balance\n  (one atomic destination-charge capture)
+Stripe --> Backend: PaymentIntent { status: succeeded }
 deactivate Stripe
-
-Backend -> Database: Update payout ledger\n(stripe_payout_id,\nstatus tracking)
-activate Database
-Database --> Backend: Updated
-deactivate Database
-
-Stripe -> Stripe: Process payout\n(batches, validation)
-
-Stripe -> Bank: Transfer funds\nto seller bank account
-activate Bank
-Bank --> Stripe: Transfer confirmed
-deactivate Bank
-
-Stripe -> Backend: Webhook: payout.paid
-activate Backend
-Backend -> Database: Find payout by\nstripe_payout_id
-activate Database
-Database --> Backend: Payout record
-deactivate Database
-
-Backend -> Database: Mark payout status = PAID
-activate Database
-Database --> Backend: Updated
-deactivate Database
-
-Backend -> Database: Move funds to available_balance\n(from pending_balance)
-activate Database
-Database --> Backend: Balance updated
-deactivate Database
-
+Backend -> DB: Payment.status = SUCCEEDED\n              capturedAt = now()\n              Listing.status = RECEIVED
+DB --> Backend: ok
+Backend --> Buyer: 200 OK
 deactivate Backend
 
-Bank -> Bank: Seller sees deposit\nin bank account
+== Phase C: Stripe confirms via webhooks ==
+
+Stripe -> Webhook: payment_intent.succeeded
+activate Webhook
+Webhook -> Webhook: verify sig + dedupe (StripeWebhookEvent)
+Webhook -> DB: ensure Payment.status = SUCCEEDED\n              ensure Listing.status in {RECEIVED, RATED}
+deactivate Webhook
+
+Stripe -> Webhook: charge.succeeded
+Webhook -> DB: Payment.stripeChargeId = charge.id
+
+Stripe -> Webhook: application_fee.created
+Webhook -> DB: Payment.stripeApplicationFeeId
+
+Stripe -> Webhook: transfer.created
+Webhook -> DB: Payment.stripeTransferId\n              SellerProfile.totalEarnedSatang += sellerNet
+
+== Phase D: payout to seller's bank (handled by Stripe) ==
+
+note over Stripe
+  Stripe automatically rolls up the
+  connected account's balance and
+  initiates a payout on the account's
+  schedule (Thailand default: T+7 business days, THB).
+  We do NOT call payouts.create.
+end note
+
+Stripe -> Bank: ACH/PromptPay payout in THB
+activate Bank
+Bank --> Stripe: settled
+deactivate Bank
+
+Stripe -> Webhook: payout.paid (Connect event,\n  stripeAccount = seller's acct)
+activate Webhook
+Webhook -> DB: SellerProfile.totalPaidOutSatang += payout.amount\n              (optional) push notification "เงินเข้าบัญชีแล้ว"
+deactivate Webhook
+
+== Live balance (UI) ==
+
+note over Backend
+  Seller wallet screen calls:
+    GET /sellers/me/balance
+      → stripe.balance.retrieve({ stripeAccount })
+    GET /sellers/me/payouts
+      → stripe.payouts.list({ stripeAccount })
+  No local pending/available columns.
+end note
 
 @enduml

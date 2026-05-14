@@ -6,192 +6,151 @@
 
 rectangle "Frontend (iOS App)" as frontend <<CLIENT_COLOR>> {
   rectangle "Auth Flow" as auth_view
-  rectangle "Seller Onboarding" as onboard_view
+  rectangle "Seller Onboarding\n(opens Stripe AccountLink\nin SFSafariViewController)" as onboard_view
   rectangle "Marketplace Browse" as browse_view
-  rectangle "Checkout UI" as checkout_view
-  rectangle "Payment Widget" as payment_view
-  rectangle "Profile & Analytics" as profile_view
+  rectangle "Cart & Checkout UI" as checkout_view
+  rectangle "Stripe PaymentSheet\n(card + PromptPay)" as payment_view
+  rectangle "Pickup / Confirm Receipt" as pickup_view
+  rectangle "Seller Wallet\n(live Stripe balance + payouts)" as wallet_view
 }
 
-rectangle "Backend Server (Node.js)" as backend <<BACKEND_COLOR>> {
-  rectangle "API Routes" as routes {
+rectangle "Backend Server (Node.js / Express / Prisma)" as backend <<BACKEND_COLOR>> {
+  rectangle "Routes" as routes {
     card "auth-route"
     card "user-route"
-    card "seller-route"
     card "listing-route"
     card "cart-route"
+    card "seller-onboarding-route"
     card "payment-route"
-    card "payout-route"
     card "review-route"
+    card "webhook-route\n(express.raw — pre-json middleware)"
   }
-  
+
   rectangle "Controllers" as controllers {
     card "auth-controller"
     card "user-controller"
-    card "cart-controller"
     card "listing-controller"
+    card "cart-controller"
+    card "seller-onboarding-controller"
     card "payment-controller"
-    card "payout-controller"
+    card "webhook-controller"
   }
-  
+
   rectangle "Services" as services {
     card "auth-service"
     card "user-service"
     card "listing-service"
-    card "payment-service"
-    card "stripe-service"
-    card "payout-service"
+    card "stripe-service\n(thin Stripe SDK wrapper)"
+    card "seller-onboarding-service"
+    card "payment-service\n(checkout / capture / cancel / refund)"
+    card "webhook-service\n(idempotent event dispatcher)"
   }
-  
+
   rectangle "Middleware" as middleware {
-    card "auth (JWT verification)"
+    card "JWT auth"
+    card "stripe-raw-body"
     card "error-handler"
-    card "logger"
     card "rate-limit"
-    card "validate"
+    card "zod validate"
   }
-  
-  rectangle "Webhooks" as webhooks {
-    card "POST /webhooks/stripe"
-    card "processes payment_intent events"
-    card "processes payout events"
-    card "processes account events"
+
+  rectangle "Background jobs" as jobs {
+    card "expire-stale-auths (every 1h):\ncancel PIs > 6 days in REQUIRES_CAPTURE"
   }
 }
 
 rectangle "Stripe" as stripe <<EXTERNAL_COLOR>> {
-  rectangle "Payment Processing" as payment_proc {
-    card "PaymentIntent"
-    card "Payment Methods"
+  rectangle "Payments" as payment_proc {
+    card "PaymentIntents\n(capture_method=manual)"
     card "Charges"
-    card "Refunds"
+    card "Refunds\n(reverse_transfer + refund_application_fee)"
+    card "PromptPay payment method"
   }
-  
-  rectangle "Stripe Connect" as connect {
+
+  rectangle "Stripe Connect (Express, country=TH)" as connect {
     card "Connected Accounts"
-    card "Onboarding Links"
-    card "Account Verification"
-    card "Payouts"
+    card "AccountLinks (onboarding)"
+    card "Destination Charges\n(application_fee_amount + transfer_data)"
+    card "Payouts\n(auto, T+7 business days, THB)"
+    card "Balance API (per connected acct)"
   }
-  
-  rectangle "Webhooks" as stripe_webhooks {
-    card "payment_intent.succeeded"
-    card "payment_intent.payment_failed"
-    card "charge.refunded"
+
+  rectangle "Webhook events we handle" as stripe_webhooks {
+    card "payment_intent.* (requires_action,\nprocessing, amount_capturable_updated,\nsucceeded, payment_failed, canceled)"
+    card "charge.succeeded / refunded /\ndispute.created"
+    card "application_fee.refunded"
+    card "transfer.reversed"
     card "account.updated"
-    card "payout.paid"
-    card "payout.failed"
+    card "payout.paid / payout.failed"
   }
 }
 
-rectangle "Database (PostgreSQL)" as database <<DATABASE_COLOR>> {
-  rectangle "User Management" as users_db {
-    card "User (id, email, password_hash)"
-    card "SellerProfile (stripe_account_id, status)"
+rectangle "Database (PostgreSQL via Prisma)" as database <<DATABASE_COLOR>> {
+  rectangle "Identity" as users_db {
+    card "User"
+    card "SellerProfile\n(stripeConnectAccountId,\nconnectStatus, chargesEnabled,\npayoutsEnabled, totals)"
+    card "RefreshToken"
   }
-  
-  rectangle "Commerce Tables" as commerce_db {
-    card "Listing (name, price, status)"
-    card "Category (name, description)"
-    card "Cart & CartItem"
+  rectangle "Commerce" as commerce_db {
+    card "Listing\n(+ currentPaymentIntentId)"
+    card "Category, PickupLocation"
+    card "Cart, CartItem"
   }
-  
-  rectangle "Payment & Payout" as payment_db {
-    card "Payment (stripe_intent_id, amount, status)"
-    card "PayoutLedger (stripe_payout_id, status)"
-    card "SellerBalance (pending, available, earned)"
+  rectangle "Payments" as payment_db {
+    card "Payment\n(stripePaymentIntentId, charge,\napplicationFee, transfer ids,\nstatus, amounts in SATANG)"
+    card "Refund"
+    card "StripeWebhookEvent (idempotency)"
   }
-  
-  rectangle "Reviews & Interactions" as review_db {
-    card "Review (rating, comment)"
-    card "PickupLocation"
-    card "Notification"
+  rectangle "Social" as review_db {
+    card "Review"
   }
 }
 
-rectangle "External Services" as external <<EXTERNAL_COLOR>> {
-  card "Google Maps (pickup location)"
-  card "File Storage (AWS S3)"
-  card "Email Service (SendGrid)"
-  card "SMS Service (Twilio)"
+rectangle "External" as external <<EXTERNAL_COLOR>> {
+  card "Object storage (S3-compatible)\nfor listing images"
+  card "Push notifications (APNs)"
 }
 
-frontend --|> routes : HTTP REST\nAPI Calls
+frontend --> routes : HTTPS REST + Bearer JWT
+routes --> controllers
+controllers --> services
+services --> database : Prisma
+services --> stripe : SDK calls\n(server-side only)
+stripe --> stripe_webhooks
+stripe_webhooks --> routes : POST /webhooks/stripe\n(raw body, verified signature)
 
-routes --> controllers : Route dispatching
-controllers --> services : Business Logic
-
-services --> middleware : Validation\n& Auth
-middleware --> database : Read/Write
-
-services --|> stripe : Create PaymentIntent\nCreate Stripe Account\nCreate Payout
-
-stripe --|> stripe_webhooks : Event Triggers
-
-stripe_webhooks --|> webhooks : HTTPS POST\n(signature verified)
-
-webhooks --> services : Process Events
-services --> database : Update State
-
-database --|> services : Query Data
-
-frontend --|> stripe : Stripe.js SDK\nPayment widget
-
-frontend --|> external : Image Upload\nLocation Services
-
-services --|> external : Store Images\nSend Emails
+frontend --> stripe : Stripe iOS SDK\n(PaymentSheet, AccountLink)
+frontend --> external : direct upload via signed URLs
 
 note right of frontend
-  iOS App handles:
-  - User authentication
-  - Stripe payment UI
-  - Browse & search marketplace
-  - Seller onboarding redirect
-  - Cart management
-  - Profile & analytics
-  
-  Never stores sensitive payment data
+  iOS app:
+  - Never sees Stripe secret keys.
+  - Card details NEVER hit our backend
+    (PaymentSheet talks to Stripe directly).
+  - For seller wallet, calls our backend,
+    which proxies stripe.balance.retrieve.
 end note
 
 note right of backend
-  Backend handles:
-  - JWT token verification
-  - Business logic validation
-  - Database transactions
-  - Stripe API calls
-  - Webhook signature verification
-  - Error handling & logging
-  
   Source of truth for:
-  - Payment status
-  - Payout records
-  - User balances
+  - Listing ownership & status
+  - Order/payment history
+  - Idempotent webhook processing
+
+  NOT source of truth for:
+  - Live seller balance  → Stripe
+  - Payout schedule       → Stripe
+  - Card data             → Stripe
 end note
 
 note right of stripe
-  Stripe handles:
-  - Card tokenization
-  - Payment authorization
-  - Identity verification
-  - Bank account verification
-  - PCI compliance
-  - Actual fund transfers
-  - Payout scheduling
-  
-  Your app stores only:
-  - Stripe IDs
-  - Status flags
-end note
-
-note right of database
-  Persistent storage:
-  - User accounts & credentials
-  - Seller information & status
-  - Listings & catalog
-  - Payment history
-  - Payout records
-  - Balances & ledgers
-  - Reviews & interactions
+  Stripe (Thailand) handles:
+  - PCI scope (card tokenization)
+  - 3DS / SCA
+  - KYC / identity verification
+  - Connected-account balances
+  - Automatic payouts (T+7, THB)
+  - PromptPay rails
 end note
 
 @enduml
