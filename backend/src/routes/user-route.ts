@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { requireAuth } from "@/middlewares/auth.js";
-import { getMe, updateMe } from "@/controllers/user-controller.js";
+import { getMe, getUserById, updateMe } from "@/controllers/user-controller.js";
 import { userRateLimit } from "@/middlewares/rate-limit.js";
 import { validate } from "@/middlewares/validate.js";
 import { updateUserProfileSchema } from "@/models/user-model.js";
@@ -23,6 +23,20 @@ export const userRouter = Router();
  *         description: Unauthorized
  */
 userRouter.get("/me", userRateLimit, requireAuth, getMe);
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: Get a public user profile by id
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Public user profile
+ *       404:
+ *         description: User not found
+ */
+userRouter.get("/:id", getUserById);
 
 /**
  * @swagger

@@ -24,13 +24,13 @@ struct ListingCardView: View {
                             ZStack {
                                 Color.gray.opacity(0.2)
 
-                                VStack(spacing: 6) {
-                                    Image(systemName: "photo")
+                                VStack(spacing: 8) {
+                                    Image(systemName: "link")
                                         .padding(.top, 18)
                                         .font(.system(size: 28))
                                         .foregroundColor(.pink.opacity(0.6))
-                                    Text("No Image")
-                                        .font(.caption2)
+                                    Text("Invalid URL")
+                                        .font(.caption)
                                         .foregroundColor(.pink.opacity(0.6))
                                 }
                             }
@@ -52,13 +52,13 @@ struct ListingCardView: View {
                     ZStack {
                         Color.gray.opacity(0.2)
 
-                        VStack(spacing: 6) {
+                        VStack(spacing: 8) {
                             Image(systemName: "photo")
                                 .padding(.top, 18)
                                 .font(.system(size: 28))
                                 .foregroundColor(.pink.opacity(0.6))
                             Text("No Image")
-                                .font(.caption2)
+                                .font(.caption)
                                 .foregroundColor(.pink.opacity(0.6))
                         }
                     }

@@ -13,6 +13,7 @@ enum Endpoint {
     case categories
     case pickupLocations
     case me
+    case user(id: String)
     case updateProfile
     case cart
     case addToCart
@@ -32,7 +33,7 @@ enum Endpoint {
             return .patch
         case .deleteListing, .removeFromCart, .clearCart:
             return .delete
-        case .listings, .listingDetail, .search, .categories, .pickupLocations, .me, .cart, .reviewsByListing, .reviewsBySeller:
+        case .listings, .listingDetail, .search, .categories, .pickupLocations, .me, .user, .cart, .reviewsByListing, .reviewsBySeller:
             return .get
         }
     }
@@ -67,6 +68,8 @@ enum Endpoint {
             return "/pickup-locations"
         case .me:
             return "/users/me"
+        case let .user(id):
+            return "/users/\(id)"
         case .updateProfile:
             return "/users/me"
         case .cart:
@@ -92,6 +95,8 @@ enum Endpoint {
             return false
         case .createListing, .updateListing, .deleteListing, .confirmReceived, .me, .updateProfile, .cart, .addToCart, .removeFromCart, .clearCart, .createReview:
             return true
+        case .user:
+            return false
         }
     }
 

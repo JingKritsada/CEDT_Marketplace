@@ -11,6 +11,9 @@ struct UserSummary: Codable, Identifiable {
     let id: String
     let displayName: String
     let avatarUrl: String?
+    let lineId: String? = nil
+    let instagram: String? = nil
+    let facebookUrl: String? = nil
 }
 
 struct RatingSummary: Codable {
