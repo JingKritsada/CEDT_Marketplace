@@ -29,8 +29,8 @@ struct ConfirmedItemsView: View {
         images: [],
         createdAt: Date(),
         updatedAt: Date(),
-        seller: UserSummary(id: "seller-1", displayName: "Sam Student", avatarUrl: nil),
-        buyer: UserSummary(id: "buyer-1", displayName: "You", avatarUrl: nil),
+        seller: UserSummary(id: "seller-1", displayName: "Sam Student", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
+        buyer: UserSummary(id: "buyer-1", displayName: "You", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
         category: Category(id: "cat-1", name: "Safety", slug: "safety"),
         pickupLocation: PickupLocation(
             id: "loc-1", name: "Lab Lobby", building: "C3", description: nil
@@ -38,7 +38,7 @@ struct ConfirmedItemsView: View {
         reviews: nil
     )
 
-    return NavigationStack {
+    NavigationStack {
         ConfirmedItemsView(listings: [listing])
     }
 }

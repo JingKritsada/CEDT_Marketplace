@@ -122,13 +122,13 @@ struct ListingCardView: View {
         images: ["https://picsum.photos/300"],
         createdAt: Date(),
         updatedAt: Date(),
-        seller: UserSummary(id: "seller-1", displayName: "Nina Student", avatarUrl: nil),
+        seller: UserSummary(id: "seller-1", displayName: "Nina Student", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
         buyer: nil,
         category: Category(id: "cat-1", name: "Books", slug: "books"),
         pickupLocation: PickupLocation(id: "loc-1", name: "Library", building: "B2", description: nil),
         reviews: nil
     )
 
-    return ListingCardView(listing: listing)
+    ListingCardView(listing: listing)
         .padding()
 }

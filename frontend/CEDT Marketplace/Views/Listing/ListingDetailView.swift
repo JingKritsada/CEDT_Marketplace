@@ -66,7 +66,7 @@ struct ListingDetailView: View {
         }
         .task {
             await viewModel.loadListing(id: listingId)
-            try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+            _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
         }
         .onChange(of: viewModel.errorMessage) { _, newValue in
             showError = newValue != nil

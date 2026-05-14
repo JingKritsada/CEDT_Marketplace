@@ -115,7 +115,7 @@ struct PostItemView: View {
             .toolbar(.hidden, for: .navigationBar)
             .task {
                 await viewModel.loadOptions()
-                try? await UNUserNotificationCenter.current().requestAuthorization(options: [
+                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [
                     .alert, .sound,
                 ])
             }

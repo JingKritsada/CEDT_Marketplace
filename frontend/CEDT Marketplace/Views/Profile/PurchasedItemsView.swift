@@ -29,8 +29,8 @@ struct PurchasedItemsView: View {
         images: [],
         createdAt: Date(),
         updatedAt: Date(),
-        seller: UserSummary(id: "seller-1", displayName: "Alex Student", avatarUrl: nil),
-        buyer: UserSummary(id: "buyer-1", displayName: "You", avatarUrl: nil),
+        seller: UserSummary(id: "seller-1", displayName: "Alex Student", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
+        buyer: UserSummary(id: "buyer-1", displayName: "You", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
         category: Category(id: "cat-1", name: "Electronics", slug: "electronics"),
         pickupLocation: PickupLocation(
             id: "loc-1", name: "Tech Center", building: "D4", description: nil
@@ -38,7 +38,7 @@ struct PurchasedItemsView: View {
         reviews: nil
     )
 
-    return NavigationStack {
+    NavigationStack {
         PurchasedItemsView(listings: [listing])
     }
 }

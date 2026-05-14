@@ -63,7 +63,7 @@ struct ListingRowView: View {
         images: ["https://picsum.photos/200"],
         createdAt: Date(),
         updatedAt: Date(),
-        seller: UserSummary(id: "seller-1", displayName: "Pat Student", avatarUrl: nil),
+        seller: UserSummary(id: "seller-1", displayName: "Pat Student", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
         buyer: nil,
         category: Category(id: "cat-1", name: "Electronics", slug: "electronics"),
         pickupLocation: PickupLocation(
@@ -72,6 +72,6 @@ struct ListingRowView: View {
         reviews: [Review(id: "rev-1", rating: 5, comment: "Great!", reviewer: nil, createdAt: Date())]
     )
 
-    return ListingRowView(listing: listing)
+    ListingRowView(listing: listing)
         .padding()
 }

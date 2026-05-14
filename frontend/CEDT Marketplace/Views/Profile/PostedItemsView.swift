@@ -29,7 +29,7 @@ struct PostedItemsView: View {
         images: [],
         createdAt: Date(),
         updatedAt: Date(),
-        seller: UserSummary(id: "seller-1", displayName: "You", avatarUrl: nil),
+        seller: UserSummary(id: "seller-1", displayName: "You", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
         buyer: nil,
         category: Category(id: "cat-1", name: "Tools", slug: "tools"),
         pickupLocation: PickupLocation(
@@ -38,7 +38,7 @@ struct PostedItemsView: View {
         reviews: nil
     )
 
-    return NavigationStack {
+    NavigationStack {
         PostedItemsView(listings: [listing])
     }
 }
