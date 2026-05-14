@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "c11ec0a3-9b8a-4f3f-bd83-cedt-payment-flow",
 		"name": "CEDT Marketplace — Stripe Payment Flow",
-		"description": "End-to-end test of the manual-capture destination-charge payment loop.\n\nRun the requests in order — each one writes the IDs it produces into collection variables so the next request can use them.\n\n### Prerequisites\n1. Backend running on `{{baseUrl}}` (default `http://localhost:3003`).\n2. `stripe listen --forward-to {{baseUrl}}/webhooks/stripe --forward-connect-to {{baseUrl}}/webhooks/stripe` running in another terminal.\n3. Seller has already completed Stripe Connect onboarding (`connectStatus = ACTIVE`).\n4. Set the variables in the **Variables** tab: `sellerEmail`, `sellerPassword`, `buyerEmail`, `buyerPassword`, `categoryId`, `pickupLocationId`, `stripeConnectAccountId`.\n\n### What this collection proves\n- Seller onboarding state\n- Race-safe checkout (`AVAILABLE → WAITING_FOR_PAYMENT`)\n- PaymentIntent w/ destination charge + application_fee\n- Manual capture on buyer-confirms-receipt\n- All Stripe IDs persisted on the Payment row\n- `totalEarnedSatang` accumulated on SellerProfile\n- Live Stripe balance + payouts proxied through the backend\n- Refund + cancel paths\n\n### What this collection does NOT do automatically\n- Confirming the PaymentIntent from a card — Postman can't simulate cards. After Step 3 you must run this in your shell:\n\n```bash\nstripe payment_intents confirm {{paymentIntentId}} --payment-method pm_card_visa\n```\n",
+		"description": "End-to-end test of the manual-capture destination-charge payment loop.\n\nRun folders **0 through 6** in order with **Collection Runner** — everything cascades via collection variables. **Skip folder 7** in the Runner (those are alternate paths; run them by hand on individual payments).\n\n### Prerequisites\n1. Backend running on `{{baseUrl}}` (default `http://localhost:3003`).\n2. `stripe listen --forward-to {{baseUrl}}/webhooks/stripe --forward-connect-to {{baseUrl}}/webhooks/stripe` running in another terminal.\n3. Seller has already completed Stripe Connect onboarding (`connectStatus = ACTIVE`).\n4. **`stripeSecretKey`** variable filled in with your raw `sk_test_...` value.\n5. Other variables: `sellerEmail`, `sellerPassword`, `buyerEmail`, `buyerPassword`, `categoryId`, `pickupLocationId`.\n\n### Setting `stripeSecretKey`\nThe collection calls Stripe's API directly to confirm the PaymentIntent (Postman can't simulate cards otherwise). Open the collection's **Variables** tab and paste your raw test secret key (from Stripe Dashboard → Developers → API keys → `sk_test_...`) into `stripeSecretKey`. No encoding.\n\n### Running\n- In Postman → Collections → this collection → **Run** → select folders 0–6 → optionally set **Delay between requests** to `500ms` for extra safety → Run.\n- Folder 7 (cancel/refund) is mutually exclusive — pick one and run by hand on a fresh Payment.\n",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -212,7 +212,46 @@
 							"host": ["{{baseUrl}}"],
 							"path": ["checkout"]
 						},
-						"description": "After this request succeeds, drop to a terminal and run:\n```bash\nstripe payment_intents confirm {{paymentIntentId}} --payment-method pm_card_visa\n```\nThen proceed to the next folder."
+						"description": "The next request confirms the PaymentIntent against Stripe's API directly using your `stripeSecretKey` collection variable, so the Runner can complete end-to-end without dropping to a shell."
+					}
+				},
+				{
+					"name": "Stripe — Confirm PaymentIntent (test mode)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200 OK from Stripe', () => pm.response.to.have.status(200));",
+									"const pi = pm.response.json();",
+									"pm.test('PI requires_capture (auth held)', () => pm.expect(pi.status).to.eql('requires_capture'));",
+									"// Give the webhook a moment to propagate to the backend before downstream assertions.",
+									"const sleep = (ms) => new Promise((r) => setTimeout(r, ms));",
+									"await sleep(2500);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{stripeSecretKey}}" },
+							{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{ "key": "payment_method", "value": "pm_card_visa" }
+							]
+						},
+						"url": {
+							"raw": "https://api.stripe.com/v1/payment_intents/{{paymentIntentId}}/confirm",
+							"protocol": "https",
+							"host": ["api", "stripe", "com"],
+							"path": ["v1", "payment_intents", "{{paymentIntentId}}", "confirm"]
+						},
+						"description": "Calls Stripe's REST API directly to simulate the buyer paying with `pm_card_visa`. The script then waits 2.5s for the webhook to reach the backend so subsequent verifications see the new state.\n\n**Requires** the `stripeSecretKey` collection variable to be set to your raw `sk_test_...` value (no encoding)."
 					}
 				},
 				{
@@ -456,7 +495,7 @@
 			]
 		},
 		{
-			"name": "7. Alternate paths (failure / cancel / refund)",
+			"name": "7. Alternate paths (run individually, NOT in collection runner)",
 			"item": [
 				{
 					"name": "Buyer cancels payment (before capture)",
@@ -468,7 +507,7 @@
 							"host": ["{{baseUrl}}"],
 							"path": ["payments", "{{paymentId}}", "cancel"]
 						},
-						"description": "Use this on a Payment that's still in REQUIRES_CAPTURE — i.e. not yet captured via confirm-received. Listing returns to AVAILABLE."
+						"description": "Use this on a Payment that's still in REQUIRES_CAPTURE — i.e. NOT yet captured via confirm-received. Listing returns to AVAILABLE.\n\n⚠️ Only one of `cancel` or `refund` is valid for a given payment, depending on its current state. Don't run both back-to-back in the same Runner pass."
 					}
 				},
 				{
@@ -532,6 +571,7 @@
 		{ "key": "stripeConnectAccountId", "value": "", "type": "string" },
 		{ "key": "listingId", "value": "", "type": "string" },
 		{ "key": "paymentIntentId", "value": "", "type": "string" },
-		{ "key": "paymentId", "value": "", "type": "string" }
+		{ "key": "paymentId", "value": "", "type": "string" },
+		{ "key": "stripeSecretKey", "value": "", "type": "string", "description": "Your Stripe TEST secret key, raw (sk_test_...). Used to confirm the PaymentIntent from inside Postman so the Runner doesn't need a shell step." }
 	]
 }
