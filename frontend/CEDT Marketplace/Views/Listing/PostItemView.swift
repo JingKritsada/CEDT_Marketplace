@@ -2,10 +2,13 @@ import Combine
 import PhotosUI
 import SwiftUI
 import UIKit
+import UserNotifications
 
 struct PostItemView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = PostItemViewModel()
+
+    @State private var showConfirmAlert = false
 
     private let cardCornerRadius: CGFloat = 24
 
@@ -74,7 +77,6 @@ struct PostItemView: View {
                         stackedField(label: "Course code", placeholder: "2110101", text: $viewModel.courseCode)
                     }
 
-                    // Error
                     if let errorMessage = viewModel.errorMessage {
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "exclamationmark.circle.fill")
@@ -89,15 +91,15 @@ struct PostItemView: View {
                     PrimaryButton(
                         title: "Post Item",
                         action: {
-                            Task {
-                                if await viewModel.submitListing() != nil {
-                                    dismiss()
-                                }
+                            if viewModel.validate() {
+                                showConfirmAlert = true
                             }
                         },
                         paddingSize: 14,
                         isLoading: viewModel.isLoading
                     )
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
@@ -105,14 +107,46 @@ struct PostItemView: View {
             }
             .background(Color(.systemGray6))
             .toolbar(.hidden, for: .navigationBar)
-            .task { await viewModel.loadOptions() }
+            .task {
+                await viewModel.loadOptions()
+                try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+            }
             .onChange(of: viewModel.isFree) { _, isFree in
                 if isFree {
                     viewModel.price = "0"
                 }
             }
+            .alert("Post this item?", isPresented: $showConfirmAlert) {
+                Button("Post", role: .none) {
+                    Task {
+                        if await viewModel.submitListing() != nil {
+                            sendNotification(title: "Item posted!", body: "Your listing is now live on the marketplace.")
+                            viewModel.resetForm()
+                            try? await Task.sleep(for: .seconds(0.5))
+                            dismiss()
+                        } else {
+                            sendNotification(
+                                title: "Posting failed",
+                                body: viewModel.errorMessage ?? "Something went wrong. Please try again."
+                            )
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Your listing will be visible to others on the marketplace.")
+            }
         }
         .background(Color(.systemGray6))
+    }
+
+    private func sendNotification(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 
     private var headerSection: some View {

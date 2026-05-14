@@ -35,10 +35,10 @@ final class PostItemViewModel: ObservableObject {
         self.imageUploadService = imageUploadService ?? ImageUploadService()
         self.categoryService = categoryService ?? CategoryService()
         self.pickupLocationService = pickupLocationService ?? PickupLocationService()
-        
+
         setupBindings()
     }
-    
+
     private func setupBindings() {
         $isFree
             .sink { [weak self] isFree in
@@ -85,6 +85,13 @@ final class PostItemViewModel: ObservableObject {
         }
     }
 
+    /// Returns true and clears errorMessage if all fields are valid; otherwise sets errorMessage and returns false.
+    @discardableResult
+    func validate() -> Bool {
+        errorMessage = nil
+        return validateInputs()
+    }
+
     func submitListing() async -> Listing? {
         errorMessage = nil
         guard validateInputs() else { return nil }
@@ -114,6 +121,20 @@ final class PostItemViewModel: ObservableObject {
             errorMessage = NetworkError.unknown.userMessage
             return nil
         }
+    }
+
+    func resetForm() {
+        title = ""
+        description = ""
+        price = ""
+        isFree = false
+        courseCode = ""
+        selectedCategoryId = nil
+        selectedPickupLocationId = nil
+        condition = .good
+        imagePreviews = []
+        imageData = []
+        errorMessage = nil
     }
 
     private func validateInputs() -> Bool {
