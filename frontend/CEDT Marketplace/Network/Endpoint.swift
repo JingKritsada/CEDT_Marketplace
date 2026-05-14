@@ -28,15 +28,13 @@ enum Endpoint {
 
     var method: HTTPMethod {
         switch self {
-        case .login, .register, .createListing, .confirmReceived, .uploadImages, .addToCart,
-             .createReview, .refreshToken, .logout:
+        case .login, .register, .createListing, .confirmReceived, .uploadImages, .addToCart, .createReview, .refreshToken, .logout:
             return .post
         case .updateListing, .updateProfile:
             return .patch
         case .deleteListing, .removeFromCart, .clearCart:
             return .delete
-        case .listings, .listingDetail, .search, .categories, .pickupLocations, .me, .user, .cart,
-             .reviewsByListing, .reviewsBySeller:
+        case .listings, .listingDetail, .search, .categories, .pickupLocations, .me, .user, .cart, .reviewsByListing, .reviewsBySeller:
             return .get
         }
     }
@@ -96,11 +94,9 @@ enum Endpoint {
 
     var requiresAuth: Bool {
         switch self {
-        case .login, .register, .refreshToken, .logout, .listings, .listingDetail, .search, .categories,
-             .pickupLocations, .reviewsByListing, .reviewsBySeller:
+        case .login, .register, .refreshToken, .logout, .listings, .listingDetail, .search, .categories, .pickupLocations, .reviewsByListing, .reviewsBySeller:
             return false
-        case .createListing, .updateListing, .deleteListing, .confirmReceived, .uploadImages, .me,
-             .updateProfile, .cart, .addToCart, .removeFromCart, .clearCart, .createReview:
+        case .createListing, .updateListing, .deleteListing, .confirmReceived, .uploadImages, .me, .updateProfile, .cart, .addToCart, .removeFromCart, .clearCart, .createReview:
             return true
         case .user:
             return false
