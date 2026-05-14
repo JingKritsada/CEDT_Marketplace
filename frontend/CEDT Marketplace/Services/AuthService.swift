@@ -12,8 +12,12 @@ final class AuthService {
         return try await client.request(.login, body: payload)
     }
 
-    func register(studentId: String, email: String, displayName: String, password: String) async throws -> AuthResponse {
-        let payload = RegisterRequest(studentId: studentId, email: email, displayName: displayName, password: password)
+    func register(studentId: String, email: String, displayName: String, password: String)
+        async throws -> AuthResponse
+    {
+        let payload = RegisterRequest(
+            studentId: studentId, email: email, displayName: displayName, password: password
+        )
         return try await client.request(.register, body: payload)
     }
 

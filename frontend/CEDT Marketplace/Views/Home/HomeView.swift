@@ -74,7 +74,9 @@ struct HomeView: View {
         viewModel.activeQuery = query
     }
 
-    private func categoryChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func categoryChip(title: String, isSelected: Bool, action: @escaping () -> Void)
+        -> some View
+    {
         Button(action: action) {
             Text(title)
                 .font(.subheadline)

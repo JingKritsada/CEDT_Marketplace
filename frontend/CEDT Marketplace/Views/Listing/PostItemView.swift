@@ -27,8 +27,14 @@ struct PostItemView: View {
                     )
 
                     formCard(title: "Listing details", systemImage: "square.and.pencil") {
-                        stackedField(label: "Title", placeholder: "e.g. Raspberry Pi 4 Model B", text: $viewModel.title)
-                        multilineField(label: "Description", placeholder: "Mention condition, usage history, and what is included.", text: $viewModel.description)
+                        stackedField(
+                            label: "Title", placeholder: "e.g. Raspberry Pi 4 Model B", text: $viewModel.title
+                        )
+                        multilineField(
+                            label: "Description",
+                            placeholder: "Mention condition, usage history, and what is included.",
+                            text: $viewModel.description
+                        )
                     }
 
                     formCard(title: "Pricing", systemImage: "bahtsign.circle") {
@@ -109,7 +115,9 @@ struct PostItemView: View {
             .toolbar(.hidden, for: .navigationBar)
             .task {
                 await viewModel.loadOptions()
-                try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+                try? await UNUserNotificationCenter.current().requestAuthorization(options: [
+                    .alert, .sound,
+                ])
             }
             .onChange(of: viewModel.isFree) { _, isFree in
                 if isFree {
@@ -120,7 +128,9 @@ struct PostItemView: View {
                 Button("Post", role: .none) {
                     Task {
                         if await viewModel.submitListing() != nil {
-                            sendNotification(title: "Item posted!", body: "Your listing is now live on the marketplace.")
+                            sendNotification(
+                                title: "Item posted!", body: "Your listing is now live on the marketplace."
+                            )
                             viewModel.resetForm()
                             try? await Task.sleep(for: .seconds(0.5))
                             dismiss()
@@ -145,7 +155,9 @@ struct PostItemView: View {
         content.title = title
         content.body = body
         content.sound = .default
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString, content: content, trigger: nil
+        )
         UNUserNotificationCenter.current().add(request)
     }
 
@@ -161,7 +173,9 @@ struct PostItemView: View {
         .padding(.bottom, 2)
     }
 
-    private func formCard<Content: View>(title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
+    private func formCard<Content: View>(
+        title: String, systemImage: String, @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Label(title, systemImage: systemImage)
                 .font(.headline)
@@ -208,7 +222,9 @@ struct PostItemView: View {
         }
     }
 
-    private func multilineField(label: String, placeholder: String, text: Binding<String>) -> some View {
+    private func multilineField(label: String, placeholder: String, text: Binding<String>)
+        -> some View
+    {
         VStack(alignment: .leading, spacing: 8) {
             Text(label.uppercased())
                 .font(.caption.weight(.semibold))
@@ -245,19 +261,19 @@ struct PostItemView: View {
                 .foregroundColor(.secondary)
 
             Menu {
-				Button(placeholder) { selection.wrappedValue = nil }
-				ForEach(options, id: \.0) { id, title in
-					Button {
-						selection.wrappedValue = id
-					} label: {
-						if selection.wrappedValue == id {
-							Label(title, systemImage: "checkmark")
-						} else {
-							Text(title)
-						}
-					}
-				}
-			} label: {
+                Button(placeholder) { selection.wrappedValue = nil }
+                ForEach(options, id: \.0) { id, title in
+                    Button {
+                        selection.wrappedValue = id
+                    } label: {
+                        if selection.wrappedValue == id {
+                            Label(title, systemImage: "checkmark")
+                        } else {
+                            Text(title)
+                        }
+                    }
+                }
+            } label: {
                 HStack(spacing: 8) {
                     Text(options.first(where: { $0.0 == selection.wrappedValue })?.1 ?? placeholder)
                         .foregroundColor(selection.wrappedValue == nil ? Color(.placeholderText) : .accentColor)
@@ -289,18 +305,18 @@ struct PostItemView: View {
                 .foregroundColor(.secondary)
 
             Menu {
-				ForEach(options, id: \.0) { id, title in
-					Button {
-						selection.wrappedValue = id
-					} label: {
-						if selection.wrappedValue == id {
-							Label(title, systemImage: "checkmark")
-						} else {
-							Text(title)
-						}
-					}
-				}
-			} label: {
+                ForEach(options, id: \.0) { id, title in
+                    Button {
+                        selection.wrappedValue = id
+                    } label: {
+                        if selection.wrappedValue == id {
+                            Label(title, systemImage: "checkmark")
+                        } else {
+                            Text(title)
+                        }
+                    }
+                }
+            } label: {
                 HStack(spacing: 8) {
                     Text(options.first(where: { $0.0 == selection.wrappedValue })?.1 ?? placeholder)
                         .lineLimit(1)

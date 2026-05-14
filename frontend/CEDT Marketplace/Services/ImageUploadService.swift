@@ -66,7 +66,9 @@ final class ImageUploadService {
 
         var request = URLRequest(url: url)
         request.httpMethod = HTTPMethod.post.rawValue
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue(
+            "multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type"
+        )
 
         guard let accessToken else {
             throw NetworkError.unauthorized
@@ -81,7 +83,9 @@ final class ImageUploadService {
 
         for (index, image) in images.enumerated() {
             body.appendString("--\(boundary)\r\n")
-            body.appendString("Content-Disposition: form-data; name=\"images\"; filename=\"image-\(index).jpg\"\r\n")
+            body.appendString(
+                "Content-Disposition: form-data; name=\"images\"; filename=\"image-\(index).jpg\"\r\n"
+            )
             body.appendString("Content-Type: image/jpeg\r\n\r\n")
             body.append(image)
             body.appendString("\r\n")

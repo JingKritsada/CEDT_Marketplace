@@ -70,7 +70,9 @@ struct ListingImagePickerView: View {
                         .background(Color(.secondarySystemBackground))
                         .overlay(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .strokeBorder(Color.accentPrimary.opacity(0.15), style: StrokeStyle(lineWidth: 1, dash: [6]))
+                                .strokeBorder(
+                                    Color.accentPrimary.opacity(0.15), style: StrokeStyle(lineWidth: 1, dash: [6])
+                                )
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }

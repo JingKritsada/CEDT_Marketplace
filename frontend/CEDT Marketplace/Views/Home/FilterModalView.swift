@@ -10,10 +10,13 @@ struct FilterModalView: View {
         NavigationStack {
             Form {
                 Section("Price") {
-                    Toggle("Free only", isOn: Binding(
-                        get: { viewModel.isFree == true },
-                        set: { viewModel.isFree = $0 ? true : nil }
-                    ))
+                    Toggle(
+                        "Free only",
+                        isOn: Binding(
+                            get: { viewModel.isFree == true },
+                            set: { viewModel.isFree = $0 ? true : nil }
+                        )
+                    )
 
                     TextField("Min price", text: $viewModel.minPrice)
                         .keyboardType(.numberPad)

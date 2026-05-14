@@ -35,7 +35,11 @@ struct ProfileView: View {
                         TextField("Instagram", text: $instagram)
                         TextField("Facebook URL", text: $facebookUrl)
                         Button("Save") {
-                            Task { await viewModel.updateSocialLinks(lineId: lineId, instagram: instagram, facebookUrl: facebookUrl) }
+                            Task {
+                                await viewModel.updateSocialLinks(
+                                    lineId: lineId, instagram: instagram, facebookUrl: facebookUrl
+                                )
+                            }
                         }
                     }
 

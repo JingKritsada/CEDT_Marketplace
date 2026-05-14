@@ -1,6 +1,7 @@
 import Combine
 import SwiftUI
 import UIKit
+import UserNotifications
 
 struct ActivityView: UIViewControllerRepresentable {
     let activityItems: [Any]
@@ -65,6 +66,7 @@ struct ListingDetailView: View {
         }
         .task {
             await viewModel.loadListing(id: listingId)
+            try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
         }
         .onChange(of: viewModel.errorMessage) { _, newValue in
             showError = newValue != nil
@@ -113,7 +115,10 @@ struct ListingDetailView: View {
             }
 
             HStack(spacing: 8) {
-                Label("\(listing.images.count) image\(listing.images.count == 1 ? "" : "s")", systemImage: "photo.on.rectangle.angled")
+                Label(
+                    "\(listing.images.count) image\(listing.images.count == 1 ? "" : "s")",
+                    systemImage: "photo.on.rectangle.angled"
+                )
                 Spacer()
             }
             .font(.caption)
@@ -139,9 +144,14 @@ struct ListingDetailView: View {
                 Divider()
 
                 VStack(spacing: 10) {
-                    detailRow(icon: "tag", title: "Price", value: listing.isFree ? "Free" : "THB \(listing.price)")
+                    detailRow(
+                        icon: "tag", title: "Price", value: listing.isFree ? "Free" : "THB \(listing.price)"
+                    )
                     detailRow(icon: "checkmark.seal", title: "Status", value: listing.status.displayName)
-                    detailRow(icon: "sparkles", title: "Condition", value: listing.condition?.displayName ?? "Not specified")
+                    detailRow(
+                        icon: "sparkles", title: "Condition",
+                        value: listing.condition?.displayName ?? "Not specified"
+                    )
                 }
             }
         }
@@ -150,10 +160,21 @@ struct ListingDetailView: View {
     private func detailsSection(_ listing: Listing) -> some View {
         detailSection(title: "Listing Details", systemImage: "square.grid.2x2") {
             VStack(spacing: 10) {
-                detailRow(icon: "book.closed", title: "Course", value: listing.courseCode ?? "Not specified")
-                detailRow(icon: "rectangle.grid.1x2", title: "Category", value: listing.category?.name ?? "Not specified")
-                detailRow(icon: "calendar", title: "Created", value: listing.createdAt?.toShortString() ?? "Not available")
-                detailRow(icon: "arrow.clockwise", title: "Updated", value: listing.updatedAt?.toShortString() ?? "Not available")
+                detailRow(
+                    icon: "book.closed", title: "Course", value: listing.courseCode ?? "Not specified"
+                )
+                detailRow(
+                    icon: "rectangle.grid.1x2", title: "Category",
+                    value: listing.category?.name ?? "Not specified"
+                )
+                detailRow(
+                    icon: "calendar", title: "Created",
+                    value: listing.createdAt?.toShortString() ?? "Not available"
+                )
+                detailRow(
+                    icon: "arrow.clockwise", title: "Updated",
+                    value: listing.updatedAt?.toShortString() ?? "Not available"
+                )
             }
         }
     }
@@ -208,7 +229,10 @@ struct ListingDetailView: View {
                         detailRow(icon: "text.alignleft", title: "Note", value: description)
                     }
                 } else {
-                    detailRow(icon: "mappin", title: "Pickup Location", value: listing.pickupLocationId ?? "Not available")
+                    detailRow(
+                        icon: "mappin", title: "Pickup Location",
+                        value: listing.pickupLocationId ?? "Not available"
+                    )
                 }
             }
         }
@@ -266,7 +290,9 @@ struct ListingDetailView: View {
         )
     }
 
-    private func detailSection<Content: View>(title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
+    private func detailSection<Content: View>(
+        title: String, systemImage: String, @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(title, systemImage: systemImage)
                 .font(.headline)
@@ -319,7 +345,9 @@ struct ListingDetailView: View {
     }
 
     @ViewBuilder
-    private func socialLinksRow(lineId: String?, instagram: String?, facebookUrl: String?) -> some View {
+    private func socialLinksRow(lineId: String?, instagram: String?, facebookUrl: String?)
+        -> some View
+    {
         let links = socialLinks(lineId: lineId, instagram: instagram, facebookUrl: facebookUrl)
 
         if !links.isEmpty {
@@ -364,23 +392,40 @@ struct ListingDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func socialLinks(lineId: String?, instagram: String?, facebookUrl: String?) -> [SocialLink] {
+    private func socialLinks(lineId: String?, instagram: String?, facebookUrl: String?)
+        -> [SocialLink]
+    {
         var links: [SocialLink] = []
 
         if let lineId = lineId?.trimmingCharacters(in: .whitespacesAndNewlines), !lineId.isEmpty {
             let line = "https://line.me/ti/p/~\(lineId)"
             let url = URL(string: line)
-            links.append(SocialLink(systemImage: "message.fill", title: "LINE", value: line, url: url, color: .green))
+            links.append(
+                SocialLink(systemImage: "message.fill", title: "LINE", value: line, url: url, color: .green)
+            )
         }
 
-        if let instagram = instagram?.trimmingCharacters(in: .whitespacesAndNewlines), !instagram.isEmpty {
+        if let instagram = instagram?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !instagram.isEmpty
+        {
             let url = URL(string: instagram)
-            links.append(SocialLink(systemImage: "camera.fill", title: "Instagram", value: instagram, url: url, color: .pink))
+            links.append(
+                SocialLink(
+                    systemImage: "camera.fill", title: "Instagram", value: instagram, url: url, color: .pink
+                )
+            )
         }
 
-        if let facebookUrl = facebookUrl?.trimmingCharacters(in: .whitespacesAndNewlines), !facebookUrl.isEmpty {
+        if let facebookUrl = facebookUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !facebookUrl.isEmpty
+        {
             let url = URL(string: facebookUrl)
-            links.append(SocialLink(systemImage: "f.circle.fill", title: "Facebook", value: facebookUrl, url: url, color: .blue))
+            links.append(
+                SocialLink(
+                    systemImage: "f.circle.fill", title: "Facebook", value: facebookUrl, url: url,
+                    color: .blue
+                )
+            )
         }
 
         return links
@@ -388,7 +433,10 @@ struct ListingDetailView: View {
 
     private func profileAvatar(name: String, avatarUrl: String?) -> some View {
         Group {
-            if let avatarUrl, let url = URL(string: avatarUrl.trimmingCharacters(in: .whitespacesAndNewlines)), url.scheme?.hasPrefix("http") == true {
+            if let avatarUrl,
+               let url = URL(string: avatarUrl.trimmingCharacters(in: .whitespacesAndNewlines)),
+               url.scheme?.hasPrefix("http") == true
+            {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case let .success(image):
@@ -446,7 +494,9 @@ struct ListingDetailView: View {
 
         for rawUrl in images {
             let trimmed = rawUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty, let url = URL(string: trimmed), let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+            guard !trimmed.isEmpty, let url = URL(string: trimmed), let scheme = url.scheme?.lowercased(),
+                  scheme == "http" || scheme == "https"
+            else {
                 continue
             }
             return url
@@ -481,18 +531,40 @@ struct ListingDetailView: View {
         .background(Color.white)
     }
 
+    private func sendNotification(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString, content: content, trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
     private var addToCartButton: some View {
         Button {
-            Task { await viewModel.addToCart() }
+            Task {
+                let success = await viewModel.addToCart()
+                if success {
+                    sendNotification(title: "Added to cart!", body: "The item has been added to your cart.")
+                } else {
+                    sendNotification(
+                        title: "Couldn't add to cart",
+                        body: viewModel.errorMessage ?? "Something went wrong. Please try again."
+                    )
+                }
+            }
         } label: {
-            Image(systemName: "cart.badge.plus")
+            Image(systemName: viewModel.isAddedToCart ? "cart.fill.badge.plus" : "cart.badge.plus")
                 .font(.title3.weight(.semibold))
-                .foregroundColor(.accentPrimary)
+                .foregroundColor(viewModel.isAddedToCart ? .secondary : .accentPrimary)
                 .padding(8)
         }
         .buttonStyle(.bordered)
-        .tint(.accentPrimary)
+        .tint(viewModel.isAddedToCart ? .secondary : .accentPrimary)
         .font(.title3.weight(.semibold))
+        .disabled(viewModel.isAddedToCart)
     }
 
     private var purchaseButton: some View {
@@ -500,9 +572,15 @@ struct ListingDetailView: View {
             title: "Purchase",
             action: {
                 Task {
-                    await viewModel.addToCart()
-                    if viewModel.errorMessage == nil {
+                    let success = await viewModel.addToCart()
+                    if success {
+                        sendNotification(title: "Added to cart!", body: "The item has been added to your cart.")
                         showCheckout = true
+                    } else {
+                        sendNotification(
+                            title: "Couldn't add to cart",
+                            body: viewModel.errorMessage ?? "Something went wrong. Please try again."
+                        )
                     }
                 }
             },

@@ -6,7 +6,7 @@
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"start": "node dist/server.js",
-		"dev": "tsx watch --include \"src/**/*.ts\" src/server.ts",
+		"dev": "NODE_OPTIONS=--no-deprecation tsx watch --include \"src/**/*.ts\" src/server.ts",
 		"format": "prettier --write \"{src,tests}/**/*.ts\" prisma.config.ts",
 		"lint": "eslint \"{src,tests}/**/*.ts\" prisma.config.ts",
 		"lint:fix": "eslint \"{src,tests}/**/*.ts\" prisma.config.ts --fix",

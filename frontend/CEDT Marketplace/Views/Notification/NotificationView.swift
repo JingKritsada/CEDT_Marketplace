@@ -8,7 +8,9 @@ struct NotificationView: View {
         NavigationStack {
             Group {
                 if viewModel.notifications.isEmpty {
-                    EmptyStateView(title: "No notifications", message: "We will notify you when something changes.")
+                    EmptyStateView(
+                        title: "No notifications", message: "We will notify you when something changes."
+                    )
                 } else {
                     List(viewModel.notifications) { notification in
                         VStack(alignment: .leading, spacing: 6) {

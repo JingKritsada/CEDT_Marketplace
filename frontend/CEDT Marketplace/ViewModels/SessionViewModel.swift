@@ -38,7 +38,10 @@ final class SessionViewModel: ObservableObject {
     func fetchProfile() async {
         do {
             let profile = try await userService.getMe()
-            currentUser = User(id: profile.id, email: profile.email, displayName: profile.displayName, studentId: profile.studentId)
+            currentUser = User(
+                id: profile.id, email: profile.email, displayName: profile.displayName,
+                studentId: profile.studentId
+            )
         } catch {
             KeychainManager.shared.clearAll()
             isAuthenticated = false

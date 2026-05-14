@@ -29,7 +29,10 @@ final class ProfileViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let payload = UpdateProfileRequest(displayName: nil, avatarUrl: nil, lineId: lineId, instagram: instagram, facebookUrl: facebookUrl)
+            let payload = UpdateProfileRequest(
+                displayName: nil, avatarUrl: nil, lineId: lineId, instagram: instagram,
+                facebookUrl: facebookUrl
+            )
             profile = try await userService.updateProfile(payload)
         } catch let error as NetworkError {
             errorMessage = error.userMessage

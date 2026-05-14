@@ -19,9 +19,12 @@ struct CheckoutView: View {
             }
 
             Section {
-                PrimaryButton(title: "Confirm Order", action: {
-                    viewModel.confirmOrder()
-                })
+                PrimaryButton(
+                    title: "Confirm Order",
+                    action: {
+                        viewModel.confirmOrder()
+                    }
+                )
             }
         }
         .navigationTitle("Checkout")

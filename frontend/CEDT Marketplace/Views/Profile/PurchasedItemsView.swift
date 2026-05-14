@@ -32,7 +32,9 @@ struct PurchasedItemsView: View {
         seller: UserSummary(id: "seller-1", displayName: "Alex Student", avatarUrl: nil),
         buyer: UserSummary(id: "buyer-1", displayName: "You", avatarUrl: nil),
         category: Category(id: "cat-1", name: "Electronics", slug: "electronics"),
-        pickupLocation: PickupLocation(id: "loc-1", name: "Tech Center", building: "D4", description: nil),
+        pickupLocation: PickupLocation(
+            id: "loc-1", name: "Tech Center", building: "D4", description: nil
+        ),
         reviews: nil
     )
 

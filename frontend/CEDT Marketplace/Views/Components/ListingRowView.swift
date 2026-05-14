@@ -66,7 +66,9 @@ struct ListingRowView: View {
         seller: UserSummary(id: "seller-1", displayName: "Pat Student", avatarUrl: nil),
         buyer: nil,
         category: Category(id: "cat-1", name: "Electronics", slug: "electronics"),
-        pickupLocation: PickupLocation(id: "loc-1", name: "Main Hall", building: "A1", description: nil),
+        pickupLocation: PickupLocation(
+            id: "loc-1", name: "Main Hall", building: "A1", description: nil
+        ),
         reviews: [Review(id: "rev-1", rating: 5, comment: "Great!", reviewer: nil, createdAt: Date())]
     )
 
