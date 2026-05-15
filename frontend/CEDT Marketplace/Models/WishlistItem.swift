@@ -1,17 +1,17 @@
 import Foundation
 
-struct Cart: Codable, Identifiable {
+struct Wishlist: Codable, Identifiable {
     let id: String
-    let items: [CartItem]
+    let items: [WishlistItem]
 }
 
-struct CartItem: Codable, Identifiable {
+struct WishlistItem: Codable, Identifiable {
     let id: String
     let listingId: String
     let quantity: Int
     let listing: Listing
 }
 
-struct AddCartItemRequest: Codable {
+struct AddWishlistItemRequest: Codable {
     let listingId: String
 }

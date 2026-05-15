@@ -38,6 +38,12 @@ const PI_STATUS_MAP: Record<Stripe.PaymentIntent.Status, PaymentStatus> = {
 const calcPlatformFee = (amountSatang: number): number =>
 	Math.floor((amountSatang * env.PLATFORM_FEE_BPS) / 10000);
 
+/// Listing.price is stored in baht. Stripe expects satang (smallest currency unit).
+const bahtToSatang = (baht: number): number => baht * 100;
+
+/// Stripe TH rejects PaymentIntents under ฿10.00 (1000 satang).
+const STRIPE_MIN_SATANG = 1000;
+
 const includePaymentForResponse = {
 	listing: { select: { id: true, title: true, images: true, price: true } },
 	seller: { select: { id: true, displayName: true, avatarUrl: true } },
@@ -84,9 +90,16 @@ export const paymentService = {
 			throw new ApiError("Seller cannot accept payments yet", 409);
 		}
 
-		const amountSatang = listing.price;
+		const amountSatang = bahtToSatang(listing.price);
 		const platformFeeSatang = calcPlatformFee(amountSatang);
 		const sellerNetSatang = amountSatang - platformFeeSatang;
+
+		if (amountSatang < STRIPE_MIN_SATANG) {
+			throw new ApiError(
+				`Listings under ฿${STRIPE_MIN_SATANG / 100} cannot be paid by card. Ask the seller to raise the price or mark it free.`,
+				400
+			);
+		}
 
 		// Race-safe flip BEFORE calling Stripe. updateMany returns count=0 if status changed.
 		const flipped = await prisma.listing.updateMany({
@@ -268,6 +281,30 @@ export const paymentService = {
 			const updatedListing = await tx.listing.update({
 				where: { id: listing.id },
 				data: { status: ListingStatus.RECEIVED, buyerId: userId },
+				include: {
+					seller: {
+						select: {
+							id: true,
+							displayName: true,
+							avatarUrl: true,
+							lineId: true,
+							instagram: true,
+							facebookUrl: true,
+						},
+					},
+					buyer: {
+						select: {
+							id: true,
+							displayName: true,
+							avatarUrl: true,
+							lineId: true,
+							instagram: true,
+							facebookUrl: true,
+						},
+					},
+					category: true,
+					pickupLocation: true,
+				},
 			});
 
 			return { payment: updatedPayment, listing: updatedListing };

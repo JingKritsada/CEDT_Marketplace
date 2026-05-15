@@ -4,13 +4,20 @@ import Foundation
 @MainActor
 final class ProfileViewModel: ObservableObject {
     @Published var profile: UserProfile?
+    @Published var sellerProfile: SellerProfile?
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    private let userService: UserService
+    /// Seller-onboarding flow state.
+    @Published var onboardingURL: URL?
+    @Published var isStartingOnboarding = false
 
-    init(userService: UserService? = nil) {
+    private let userService: UserService
+    private let sellerService: SellerOnboardingService
+
+    init(userService: UserService? = nil, sellerService: SellerOnboardingService? = nil) {
         self.userService = userService ?? UserService()
+        self.sellerService = sellerService ?? SellerOnboardingService()
     }
 
     func loadProfile() async {
@@ -18,6 +25,44 @@ final class ProfileViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             profile = try await userService.getMe()
+        } catch let error as NetworkError {
+            errorMessage = error.userMessage
+        } catch {
+            errorMessage = NetworkError.unknown.userMessage
+        }
+
+        await loadSellerProfile()
+    }
+
+    func loadSellerProfile() async {
+        do {
+            sellerProfile = try await sellerService.myProfile()
+        } catch {
+            // Not all users have a seller profile yet — silently treat as "not registered".
+            sellerProfile = nil
+        }
+    }
+
+    func refreshSellerStatus() async {
+        do {
+            sellerProfile = try await sellerService.refreshStatus()
+        } catch let error as NetworkError {
+            errorMessage = error.userMessage
+        } catch {
+            errorMessage = NetworkError.unknown.userMessage
+        }
+    }
+
+    func startSellerOnboarding() async {
+        isStartingOnboarding = true
+        defer { isStartingOnboarding = false }
+        do {
+            let response = try await sellerService.startOnboarding()
+            if let url = URL(string: response.url) {
+                onboardingURL = url
+            } else {
+                errorMessage = "Onboarding link is invalid."
+            }
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {

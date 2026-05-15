@@ -14,23 +14,23 @@ enum ListingStatus: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .available:
-            return "Available"
+            "Available"
         case .reserved:
-            return "Reserved"
+            "Reserved"
         case .waitingForPayment:
-            return "Waiting for Payment"
+            "Waiting for Payment"
         case .paid:
-            return "Paid"
+            "Paid"
         case .waitingForPickup:
-            return "Waiting for Pickup"
+            "Waiting for Pickup"
         case .sent:
-            return "Sent"
+            "Sent"
         case .received:
-            return "Received"
+            "Received"
         case .rated:
-            return "Rated"
+            "Rated"
         case .sold:
-            return "Sold"
+            "Sold"
         }
     }
 }
@@ -45,15 +45,15 @@ enum ListingCondition: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .new:
-            return "New"
+            "New"
         case .likeNew:
-            return "Like New"
+            "Like New"
         case .good:
-            return "Good"
+            "Good"
         case .fair:
-            return "Fair"
+            "Fair"
         case .poor:
-            return "Poor"
+            "Poor"
         }
     }
 }

@@ -2,22 +2,22 @@ import Combine
 import Foundation
 
 @MainActor
-final class CartViewModel: ObservableObject {
-    @Published var cart: Cart?
+final class WishlistViewModel: ObservableObject {
+    @Published var wishlist: Wishlist?
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    private let cartService: CartService
+    private let service: WishlistService
 
-    init(cartService: CartService? = nil) {
-        self.cartService = cartService ?? CartService()
+    init(service: WishlistService? = nil) {
+        self.service = service ?? WishlistService()
     }
 
-    func loadCart() async {
+    func load() async {
         isLoading = true
         defer { isLoading = false }
         do {
-            cart = try await cartService.fetchCart()
+            wishlist = try await service.fetchWishlist()
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {
@@ -27,8 +27,8 @@ final class CartViewModel: ObservableObject {
 
     func removeItem(listingId: String) async {
         do {
-            try await cartService.removeItem(listingId: listingId)
-            await loadCart()
+            try await service.removeItem(listingId: listingId)
+            await load()
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {
@@ -36,10 +36,10 @@ final class CartViewModel: ObservableObject {
         }
     }
 
-    func clearCart() async {
+    func clear() async {
         do {
-            try await cartService.clearCart()
-            cart = nil
+            try await service.clearWishlist()
+            wishlist = nil
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {

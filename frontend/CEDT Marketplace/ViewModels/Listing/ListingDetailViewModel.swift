@@ -8,18 +8,19 @@ final class ListingDetailViewModel: ObservableObject {
     @Published var buyerProfile: UserProfile?
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var isAddedToCart = false
+    @Published var isAddedToWishlist = false
 
     private let listingService: ListingService
-    private let cartService: CartService
+    private let wishlistService: WishlistService
     private let userService: UserService
 
     init(
-        listingService: ListingService? = nil, cartService: CartService? = nil,
+        listingService: ListingService? = nil,
+        wishlistService: WishlistService? = nil,
         userService: UserService? = nil
     ) {
         self.listingService = listingService ?? ListingService()
-        self.cartService = cartService ?? CartService()
+        self.wishlistService = wishlistService ?? WishlistService()
         self.userService = userService ?? UserService()
     }
 
@@ -47,11 +48,11 @@ final class ListingDetailViewModel: ObservableObject {
         }
     }
 
-    func addToCart() async -> Bool {
+    func addToWishlist() async -> Bool {
         guard let listing else { return false }
         do {
-            _ = try await cartService.addItem(listingId: listing.id)
-            isAddedToCart = true
+            _ = try await wishlistService.addItem(listingId: listing.id)
+            isAddedToWishlist = true
             return true
         } catch let error as NetworkError {
             errorMessage = error.userMessage
@@ -65,7 +66,8 @@ final class ListingDetailViewModel: ObservableObject {
     private func loadRelatedProfilesIfNeeded() async {
         guard let listing else { return }
 
-        if needsSocialLinks(listing.seller), let sellerId = listing.sellerId ?? listing.seller?.id,
+        if needsSocialLinks(listing.seller),
+           let sellerId = listing.sellerId ?? listing.seller?.id,
            !sellerId.isEmpty
         {
             sellerProfile = try? await userService.getUser(id: sellerId)

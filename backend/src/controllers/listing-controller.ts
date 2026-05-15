@@ -59,7 +59,9 @@ export const confirmListingReceived = asyncHandler(async (req: Request, res: Res
 	if (listing?.currentPaymentIntentId) {
 		const result = await paymentService.confirmReceiptForListing(listingId, userId);
 
-		res.status(200).json(result);
+		// Unwrap to match the free-listing branch's response shape (Listing) — the
+		// iOS client always decodes this endpoint as a Listing.
+		res.status(200).json(result.listing);
 
 		return;
 	}

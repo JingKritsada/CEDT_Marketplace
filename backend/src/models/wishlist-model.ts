@@ -4,7 +4,7 @@ import { z } from "zod";
  * @swagger
  * components:
  *   schemas:
- *     AddCartItemInput:
+ *     AddWishlistItemInput:
  *       type: object
  *       required:
  *         - listingId
@@ -17,13 +17,13 @@ import { z } from "zod";
  *           maximum: 1
  */
 
-export const addCartItemSchema = z.object({
+export const addWishlistItemSchema = z.object({
 	listingId: z.string().trim().min(1),
 	quantity: z.coerce.number().int().min(1).max(1).default(1),
 });
 
-export const cartItemIdSchema = z.object({
+export const wishlistItemIdSchema = z.object({
 	listingId: z.string().trim().min(1),
 });
 
-export type AddCartItemInput = z.infer<typeof addCartItemSchema>;
+export type AddWishlistItemInput = z.infer<typeof addWishlistItemSchema>;

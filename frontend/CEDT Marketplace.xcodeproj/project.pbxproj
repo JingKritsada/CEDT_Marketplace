@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		73BD4F9B2FB6ADEA0035E64E /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 73BD4F9A2FB6ADEA0035E64E /* StripePaymentSheet */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		73772E572F9361150021299A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				73BD4F9B2FB6ADEA0035E64E /* StripePaymentSheet in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = "CEDT Marketplace";
 			packageProductDependencies = (
+				73BD4F9A2FB6ADEA0035E64E /* StripePaymentSheet */,
 			);
 			productName = "CEDT Marketplace";
 			productReference = 73772E492F9361130021299A /* CEDT Marketplace.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 73772E402F9361130021299A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				73BD4F992FB6ADEA0035E64E /* XCRemoteSwiftPackageReference "stripe-ios-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 73772E4A2F9361130021299A /* Products */;
 			projectDirPath = "";
@@ -576,6 +585,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		73BD4F992FB6ADEA0035E64E /* XCRemoteSwiftPackageReference "stripe-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stripe/stripe-ios-spm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 25.14.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		73BD4F9A2FB6ADEA0035E64E /* StripePaymentSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 73BD4F992FB6ADEA0035E64E /* XCRemoteSwiftPackageReference "stripe-ios-spm" */;
+			productName = StripePaymentSheet;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 73772E412F9361130021299A /* Project object */;
 }

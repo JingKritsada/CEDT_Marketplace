@@ -70,7 +70,7 @@ model User {
     refreshTokens RefreshToken[]
     reviewsWritten Review[]       @relation("ReviewerReviews")
     reviewsReceived Review[]      @relation("SellerReviews")
-    carts         Cart[]
+    wishlists        Wishlist[]
     sellerProfile    SellerProfile?
     paymentsAsBuyer  Payment[]      @relation("BuyerPayments")
     paymentsAsSeller Payment[]      @relation("SellerPayments")
@@ -117,7 +117,7 @@ model Listing {
     category         Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
     pickupLocation   PickupLocation?  @relation(fields: [pickupLocationId], references: [id], onDelete: SetNull)
     reviews          Review[]
-    cartItems        CartItem[]
+    wishlistItems    WishlistItem[]
     payments         Payment[]
 
     @@index([sellerId])
@@ -215,28 +215,28 @@ model RefreshToken {
     @@index([userId])
 }
 
-model Cart {
-    id        String     @id @default(cuid())
+model Wishlist {
+    id        String         @id @default(cuid())
     userId    String
-    createdAt DateTime   @default(now())
-    updatedAt DateTime   @updatedAt
-    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-    items     CartItem[]
+    createdAt DateTime       @default(now())
+    updatedAt DateTime       @updatedAt
+    user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+    items     WishlistItem[]
 
     @@unique([userId])
 }
 
-model CartItem {
-    id        String   @id @default(cuid())
-    cartId    String
-    listingId String
-    quantity  Int      @default(1)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-    listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+model WishlistItem {
+    id         String   @id @default(cuid())
+    wishlistId String
+    listingId  String
+    quantity   Int      @default(1)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+    listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
-    @@unique([cartId, listingId])
+    @@unique([wishlistId, listingId])
     @@index([listingId])
 }
 

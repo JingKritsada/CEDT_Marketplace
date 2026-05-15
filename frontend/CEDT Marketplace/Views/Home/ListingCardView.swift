@@ -28,10 +28,10 @@ struct ListingCardView: View {
                                     Image(systemName: "link")
                                         .padding(.top, 18)
                                         .font(.system(size: 28))
-										.foregroundColor(.gray)
+                                        .foregroundColor(.gray)
                                     Text("Invalid URL")
                                         .font(.caption)
-										.foregroundColor(.gray)
+                                        .foregroundColor(.gray)
                                 }
                             }
                             .aspectRatio(1, contentMode: .fill)
@@ -56,10 +56,10 @@ struct ListingCardView: View {
                             Image(systemName: "photo")
                                 .padding(.top, 18)
                                 .font(.system(size: 28))
-								.foregroundColor(.gray)
+                                .foregroundColor(.gray)
                             Text("No Image")
                                 .font(.caption)
-								.foregroundColor(.gray)
+                                .foregroundColor(.gray)
                         }
                     }
                     .aspectRatio(1, contentMode: .fill)
@@ -122,7 +122,14 @@ struct ListingCardView: View {
         images: ["https://picsum.photos/300"],
         createdAt: Date(),
         updatedAt: Date(),
-        seller: UserSummary(id: "seller-1", displayName: "Nina Student", avatarUrl: nil, lineId: nil, instagram: nil, facebookUrl: nil),
+        seller: UserSummary(
+            id: "seller-1",
+            displayName: "Nina Student",
+            avatarUrl: nil,
+            lineId: nil,
+            instagram: nil,
+            facebookUrl: nil
+        ),
         buyer: nil,
         category: Category(id: "cat-1", name: "Books", slug: "books"),
         pickupLocation: PickupLocation(id: "loc-1", name: "Library", building: "B2", description: nil),

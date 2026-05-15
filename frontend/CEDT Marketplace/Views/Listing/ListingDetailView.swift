@@ -16,12 +16,12 @@ struct ActivityView: UIViewControllerRepresentable {
 struct ListingDetailView: View {
     let listingId: String
 
+    @EnvironmentObject private var session: SessionViewModel
     @StateObject private var viewModel = ListingDetailViewModel()
-    @State private var showError = false
     @State private var showCheckout = false
     @State private var showShare = false
     @State private var shareItems: [Any] = []
-    @State private var showShareError = false
+    @State private var showConfirmReceiptAlert = false
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -44,16 +44,13 @@ struct ListingDetailView: View {
         .background(Color(.systemGray6))
         .navigationTitle("Details")
         .navigationDestination(isPresented: $showCheckout) {
-            CheckoutView()
+            if let listing = viewModel.listing {
+                CheckoutView(directListing: listing)
+            }
         }
         .sheet(isPresented: $showShare) {
             ActivityView(activityItems: shareItems)
                 .presentationDetents([.medium])
-        }
-        .alert("Unable to Share", isPresented: $showShareError) {
-            Button("OK") { showShareError = false }
-        } message: {
-            Text("No image or invalid URL.")
         }
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
@@ -66,15 +63,11 @@ struct ListingDetailView: View {
         }
         .task {
             await viewModel.loadListing(id: listingId)
-            _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
         }
         .onChange(of: viewModel.errorMessage) { _, newValue in
-            showError = newValue != nil
-        }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") { viewModel.errorMessage = nil }
-        } message: {
-            Text(viewModel.errorMessage ?? "")
+            guard let message = newValue, !message.isEmpty else { return }
+            LocalNotifier.error(message)
+            viewModel.errorMessage = nil
         }
     }
 
@@ -290,8 +283,8 @@ struct ListingDetailView: View {
         )
     }
 
-    private func detailSection<Content: View>(
-        title: String, systemImage: String, @ViewBuilder content: () -> Content
+    private func detailSection(
+        title: String, systemImage: String, @ViewBuilder content: () -> some View
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(title, systemImage: systemImage)
@@ -473,7 +466,7 @@ struct ListingDetailView: View {
 
     private func initials(from name: String) -> String {
         let pieces = name.split(separator: " ").prefix(2)
-        let letters = pieces.compactMap { $0.first }.map(String.init)
+        let letters = pieces.compactMap(\.first).map(String.init)
         return letters.isEmpty ? "?" : letters.joined().uppercased()
     }
 
@@ -495,8 +488,8 @@ struct ListingDetailView: View {
         for rawUrl in images {
             let trimmed = rawUrl.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty, let url = URL(string: trimmed), let scheme = url.scheme?.lowercased(),
-                  scheme == "http" || scheme == "https"
-            else {
+                  scheme == "http" || scheme == "https" else
+            {
                 continue
             }
             return url
@@ -508,7 +501,7 @@ struct ListingDetailView: View {
     private var shareButton: some View {
         Button {
             guard let url = shareURL else {
-                showShareError = true
+                LocalNotifier.error("No image or invalid URL.", title: "Unable to share")
                 return
             }
 
@@ -521,67 +514,95 @@ struct ListingDetailView: View {
     }
 
     private var bottomActionBar: some View {
-        HStack(spacing: 12) {
-            addToCartButton
-            purchaseButton
+        Group {
+            if shouldShowConfirmReceipt {
+                confirmReceiptButton
+            } else if !isCurrentUserSeller {
+                HStack(spacing: 12) {
+                    addToWishlistButton
+                    purchaseButton
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 16)
         .background(Color.white)
-    }
-
-    private func sendNotification(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString, content: content, trigger: nil
-        )
-        UNUserNotificationCenter.current().add(request)
-    }
-
-    private var addToCartButton: some View {
-        Button {
-            Task {
-                let success = await viewModel.addToCart()
-                if success {
-                    sendNotification(title: "Added to cart!", body: "The item has been added to your cart.")
-                } else {
-                    sendNotification(
-                        title: "Couldn't add to cart",
-                        body: viewModel.errorMessage ?? "Something went wrong. Please try again."
-                    )
+        .alert("Confirm receipt?", isPresented: $showConfirmReceiptAlert) {
+            Button("Confirm", role: .none) {
+                Task {
+                    await viewModel.confirmReceived()
+                    if viewModel.errorMessage == nil {
+                        LocalNotifier.success(
+                            "Funds have been released to the seller.", title: "Receipt confirmed"
+                        )
+                    }
                 }
             }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(
+                "Confirming releases payment to the seller. Only confirm after you've physically received the item."
+            )
+        }
+    }
+
+    private var currentUserId: String? {
+        session.currentUser?.id
+    }
+
+    private var isCurrentUserSeller: Bool {
+        guard let listing = viewModel.listing, let currentUserId else { return false }
+        return listing.sellerId == currentUserId
+    }
+
+    private var shouldShowConfirmReceipt: Bool {
+        guard let listing = viewModel.listing, let currentUserId else { return false }
+        guard listing.buyerId == currentUserId else { return false }
+        return [.paid, .sent, .waitingForPickup].contains(listing.status)
+    }
+
+    private var confirmReceiptButton: some View {
+        PrimaryButton(
+            title: "Confirm Receipt",
+            action: { showConfirmReceiptAlert = true },
+            paddingSize: 8,
+            isLoading: viewModel.isLoading
+        )
+        .font(.title3.weight(.semibold))
+        .frame(maxWidth: .infinity)
+    }
+
+    private var addToWishlistButton: some View {
+        Button {
+            Task {
+                let success = await viewModel.addToWishlist()
+                if success {
+                    LocalNotifier.success(
+                        "We saved this item so you can buy it later.", title: "Saved to wishlist"
+                    )
+                }
+                // Failure path: errorMessage is set by the view model and the
+                // root .onChange below surfaces it as a single notification.
+            }
         } label: {
-            Image(systemName: viewModel.isAddedToCart ? "cart.fill.badge.plus" : "cart.badge.plus")
+            Image(systemName: viewModel.isAddedToWishlist ? "heart.fill" : "heart")
                 .font(.title3.weight(.semibold))
-                .foregroundColor(viewModel.isAddedToCart ? .secondary : .accentPrimary)
+                .foregroundColor(viewModel.isAddedToWishlist ? .secondary : .accentPrimary)
                 .padding(8)
         }
         .buttonStyle(.bordered)
-        .tint(viewModel.isAddedToCart ? .secondary : .accentPrimary)
+        .tint(viewModel.isAddedToWishlist ? .secondary : .accentPrimary)
         .font(.title3.weight(.semibold))
-        .disabled(viewModel.isAddedToCart)
+        .disabled(viewModel.isAddedToWishlist)
     }
 
     private var purchaseButton: some View {
         PrimaryButton(
             title: "Purchase",
             action: {
-                Task {
-                    let success = await viewModel.addToCart()
-                    if success {
-                        sendNotification(title: "Added to cart!", body: "The item has been added to your cart.")
-                        showCheckout = true
-                    } else {
-                        sendNotification(
-                            title: "Couldn't add to cart",
-                            body: viewModel.errorMessage ?? "Something went wrong. Please try again."
-                        )
-                    }
+                if viewModel.listing != nil {
+                    showCheckout = true
                 }
             },
             paddingSize: 8,

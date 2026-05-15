@@ -48,7 +48,7 @@ final class RegisterViewModel: ObservableObject {
             errorMessage = "Student ID is required."
             return false
         }
-        guard studentId.count == 10, studentId.allSatisfy({ $0.isNumber }) else {
+        guard studentId.count == 10, studentId.allSatisfy(\.isNumber) else {
             errorMessage = "Student ID must be 10 digits."
             return false
         }

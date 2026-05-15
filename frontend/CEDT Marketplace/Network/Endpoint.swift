@@ -16,90 +16,180 @@ enum Endpoint {
     case me
     case user(id: String)
     case updateProfile
-    case cart
-    case addToCart
-    case removeFromCart(listingId: String)
-    case clearCart
+    case wishlist
+    case addToWishlist
+    case removeFromWishlist(listingId: String)
+    case clearWishlist
     case reviewsByListing(listingId: String)
     case reviewsBySeller(sellerId: String)
     case createReview
     case refreshToken
     case logout
 
+    // Stripe / payments
+    case checkout
+    case payments
+    case paymentDetail(id: String)
+    case cancelPayment(id: String)
+    case refundPayment(id: String)
+    case sellerOnboarding
+    case sellerOnboardingRefresh
+    case sellerMe
+    case sellerBalance
+    case sellerPayouts
+
     var method: HTTPMethod {
         switch self {
-        case .login, .register, .createListing, .confirmReceived, .uploadImages, .addToCart, .createReview, .refreshToken, .logout:
-            return .post
+        case .login,
+             .register,
+             .createListing,
+             .confirmReceived,
+             .uploadImages,
+             .addToWishlist,
+             .createReview,
+             .refreshToken,
+             .logout,
+             .checkout,
+             .cancelPayment,
+             .refundPayment,
+             .sellerOnboarding,
+             .sellerOnboardingRefresh:
+            .post
         case .updateListing, .updateProfile:
-            return .patch
-        case .deleteListing, .removeFromCart, .clearCart:
-            return .delete
-        case .listings, .listingDetail, .search, .categories, .pickupLocations, .me, .user, .cart, .reviewsByListing, .reviewsBySeller:
-            return .get
+            .patch
+        case .deleteListing, .removeFromWishlist, .clearWishlist:
+            .delete
+        case .listings,
+             .listingDetail,
+             .search,
+             .categories,
+             .pickupLocations,
+             .me,
+             .user,
+             .wishlist,
+             .reviewsByListing,
+             .reviewsBySeller,
+             .payments,
+             .paymentDetail,
+             .sellerMe,
+             .sellerBalance,
+             .sellerPayouts:
+            .get
         }
     }
 
     var path: String {
         switch self {
         case .login:
-            return "/auth/login"
+            "/auth/login"
         case .register:
-            return "/auth/register"
+            "/auth/register"
         case .refreshToken:
-            return "/auth/refresh"
+            "/auth/refresh"
         case .logout:
-            return "/auth/logout"
+            "/auth/logout"
         case .listings:
-            return "/listings"
+            "/listings"
         case .search:
-            return "/listings/search"
+            "/listings/search"
         case let .listingDetail(id):
-            return "/listings/\(id)"
+            "/listings/\(id)"
         case .createListing:
-            return "/listings"
+            "/listings"
         case let .updateListing(id):
-            return "/listings/\(id)"
+            "/listings/\(id)"
         case let .deleteListing(id):
-            return "/listings/\(id)"
+            "/listings/\(id)"
         case let .confirmReceived(id):
-            return "/listings/\(id)/confirm-received"
+            "/listings/\(id)/confirm-received"
         case .uploadImages:
-            return "/uploads/images"
+            "/uploads/images"
         case .categories:
-            return "/categories"
+            "/categories"
         case .pickupLocations:
-            return "/pickup-locations"
+            "/pickup-locations"
         case .me:
-            return "/users/me"
+            "/users/me"
         case let .user(id):
-            return "/users/\(id)"
+            "/users/\(id)"
         case .updateProfile:
-            return "/users/me"
-        case .cart:
-            return "/cart"
-        case .addToCart:
-            return "/cart/items"
-        case let .removeFromCart(listingId):
-            return "/cart/items/\(listingId)"
-        case .clearCart:
-            return "/cart/clear"
+            "/users/me"
+        case .wishlist:
+            "/wishlist"
+        case .addToWishlist:
+            "/wishlist/items"
+        case let .removeFromWishlist(listingId):
+            "/wishlist/items/\(listingId)"
+        case .clearWishlist:
+            "/wishlist/clear"
         case .reviewsByListing:
-            return "/reviews"
+            "/reviews"
         case .reviewsBySeller:
-            return "/reviews"
+            "/reviews"
         case .createReview:
-            return "/reviews"
+            "/reviews"
+        case .checkout:
+            "/checkout"
+        case .payments:
+            "/payments"
+        case let .paymentDetail(id):
+            "/payments/\(id)"
+        case let .cancelPayment(id):
+            "/payments/\(id)/cancel"
+        case let .refundPayment(id):
+            "/payments/\(id)/refund"
+        case .sellerOnboarding:
+            "/sellers/onboarding"
+        case .sellerOnboardingRefresh:
+            "/sellers/onboarding/refresh"
+        case .sellerMe:
+            "/sellers/me"
+        case .sellerBalance:
+            "/sellers/me/balance"
+        case .sellerPayouts:
+            "/sellers/me/payouts"
         }
     }
 
     var requiresAuth: Bool {
         switch self {
-        case .login, .register, .refreshToken, .logout, .listings, .listingDetail, .search, .categories, .pickupLocations, .reviewsByListing, .reviewsBySeller:
-            return false
-        case .createListing, .updateListing, .deleteListing, .confirmReceived, .uploadImages, .me, .updateProfile, .cart, .addToCart, .removeFromCart, .clearCart, .createReview:
-            return true
+        case .login,
+             .register,
+             .refreshToken,
+             .logout,
+             .listings,
+             .listingDetail,
+             .search,
+             .categories,
+             .pickupLocations,
+             .reviewsByListing,
+             .reviewsBySeller:
+            false
+        case .createListing,
+             .updateListing,
+             .deleteListing,
+             .confirmReceived,
+             .uploadImages,
+             .me,
+             .updateProfile,
+             .wishlist,
+             .addToWishlist,
+             .removeFromWishlist,
+             .clearWishlist,
+             .createReview,
+             .checkout,
+             .payments,
+             .paymentDetail,
+             .cancelPayment,
+             .refundPayment,
+             .sellerOnboarding,
+             .sellerOnboardingRefresh,
+             .sellerMe,
+             .sellerBalance,
+             .sellerPayouts:
+            true
         case .user:
-            return false
+            false
         }
     }
 

@@ -74,6 +74,6 @@ struct ImageCarousel: View {
 #Preview {
     ImageCarousel(imageUrls: [
         "https://picsum.photos/400/300",
-        "https://picsum.photos/401/300",
+        "https://picsum.photos/401/300"
     ])
 }

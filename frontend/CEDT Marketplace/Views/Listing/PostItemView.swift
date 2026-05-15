@@ -115,9 +115,6 @@ struct PostItemView: View {
             .toolbar(.hidden, for: .navigationBar)
             .task {
                 await viewModel.loadOptions()
-                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [
-                    .alert, .sound,
-                ])
             }
             .onChange(of: viewModel.isFree) { _, isFree in
                 if isFree {
@@ -128,16 +125,16 @@ struct PostItemView: View {
                 Button("Post", role: .none) {
                     Task {
                         if await viewModel.submitListing() != nil {
-                            sendNotification(
-                                title: "Item posted!", body: "Your listing is now live on the marketplace."
+                            LocalNotifier.success(
+                                "Your listing is now live on the marketplace.", title: "Item posted"
                             )
                             viewModel.resetForm()
                             try? await Task.sleep(for: .seconds(0.5))
                             dismiss()
                         } else {
-                            sendNotification(
-                                title: "Posting failed",
-                                body: viewModel.errorMessage ?? "Something went wrong. Please try again."
+                            LocalNotifier.error(
+                                viewModel.errorMessage ?? "Something went wrong. Please try again.",
+                                title: "Posting failed"
                             )
                         }
                     }
@@ -148,17 +145,6 @@ struct PostItemView: View {
             }
         }
         .background(Color(.systemGray6))
-    }
-
-    private func sendNotification(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString, content: content, trigger: nil
-        )
-        UNUserNotificationCenter.current().add(request)
     }
 
     private var headerSection: some View {
@@ -173,8 +159,8 @@ struct PostItemView: View {
         .padding(.bottom, 2)
     }
 
-    private func formCard<Content: View>(
-        title: String, systemImage: String, @ViewBuilder content: () -> Content
+    private func formCard(
+        title: String, systemImage: String, @ViewBuilder content: () -> some View
     ) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Label(title, systemImage: systemImage)

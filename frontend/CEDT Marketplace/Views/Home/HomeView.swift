@@ -11,7 +11,7 @@ struct HomeView: View {
     private let categoryService = CategoryService()
     private let gridColumns = [
         GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
     ]
 
     var body: some View {

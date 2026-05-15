@@ -6,13 +6,13 @@ struct StatusBadge: View {
     private var color: Color {
         switch status {
         case .available:
-            return .statusAvailable
+            .statusAvailable
         case .reserved, .waitingForPayment:
-            return .statusReserved
+            .statusReserved
         case .paid, .waitingForPickup, .sent, .received:
-            return .statusInfo
+            .statusInfo
         case .rated, .sold:
-            return .statusSold
+            .statusSold
         }
     }
 

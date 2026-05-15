@@ -32,9 +32,9 @@ struct MainTabView: View {
                     Label("Post", systemImage: "plus.circle")
                 }
 
-            CartView()
+            WishlistView()
                 .tabItem {
-                    Label("Cart", systemImage: "cart")
+                    Label("Wishlist", systemImage: "heart")
                 }
 
             ProfileView()

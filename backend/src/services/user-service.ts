@@ -8,9 +8,10 @@ export const userService = {
 			where: { id },
 			include: {
 				listings: {
-					orderBy: {
-						createdAt: "desc",
-					},
+					orderBy: { createdAt: "desc" },
+				},
+				buyerListings: {
+					orderBy: { createdAt: "desc" },
 				},
 			},
 		});
@@ -25,6 +26,18 @@ export const userService = {
 			_count: { rating: true },
 		});
 
+		// Merge seller-side and buyer-side listings (deduped). The frontend filters
+		// this combined list by sellerId / buyerId to populate Posted / Purchased /
+		// Sold / Confirmed views, so it needs to see both sides.
+		const seen = new Set<string>();
+		const merged: typeof user.listings = [];
+		for (const listing of [...user.listings, ...user.buyerListings]) {
+			if (seen.has(listing.id)) continue;
+			seen.add(listing.id);
+			merged.push(listing);
+		}
+		merged.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
 		return {
 			id: user.id,
 			email: user.email,
@@ -35,7 +48,7 @@ export const userService = {
 			instagram: user.instagram,
 			facebookUrl: user.facebookUrl,
 			createdAt: user.createdAt,
-			listings: user.listings,
+			listings: merged,
 			rating: {
 				average: ratingSummary._avg.rating ?? 0,
 				count: ratingSummary._count.rating,

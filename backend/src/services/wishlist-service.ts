@@ -2,22 +2,22 @@ import { ListingStatus } from "@prisma/client";
 
 import { prisma } from "@/config/prisma.js";
 import { ApiError } from "@/utils/api-error.js";
-import type { AddCartItemInput } from "@/models/cart-model.js";
+import type { AddWishlistItemInput } from "@/models/wishlist-model.js";
 
-const getOrCreateCart = async (userId: string) => {
-	return prisma.cart.upsert({
+const getOrCreateWishlist = async (userId: string) => {
+	return prisma.wishlist.upsert({
 		where: { userId },
 		update: {},
 		create: { userId },
 	});
 };
 
-export const cartService = {
-	async getCart(userId: string) {
-		const cart = await getOrCreateCart(userId);
+export const wishlistService = {
+	async getWishlist(userId: string) {
+		const wishlist = await getOrCreateWishlist(userId);
 
-		return prisma.cart.findUnique({
-			where: { id: cart.id },
+		return prisma.wishlist.findUnique({
+			where: { id: wishlist.id },
 			include: {
 				items: {
 					include: {
@@ -40,7 +40,7 @@ export const cartService = {
 		});
 	},
 
-	async addItem(userId: string, payload: AddCartItemInput) {
+	async addItem(userId: string, payload: AddWishlistItemInput) {
 		const listing = await prisma.listing.findUnique({
 			where: { id: payload.listingId },
 			select: {
@@ -55,19 +55,19 @@ export const cartService = {
 		}
 
 		if (listing.sellerId === userId) {
-			throw new ApiError("You cannot add your own listing to the cart", 400);
+			throw new ApiError("You cannot add your own listing to the wishlist", 400);
 		}
 
 		if (listing.status !== ListingStatus.AVAILABLE) {
 			throw new ApiError("Listing is not available", 400);
 		}
 
-		const cart = await getOrCreateCart(userId);
+		const wishlist = await getOrCreateWishlist(userId);
 
-		const item = await prisma.cartItem.upsert({
+		const item = await prisma.wishlistItem.upsert({
 			where: {
-				cartId_listingId: {
-					cartId: cart.id,
+				wishlistId_listingId: {
+					wishlistId: wishlist.id,
 					listingId: payload.listingId,
 				},
 			},
@@ -75,7 +75,7 @@ export const cartService = {
 				quantity: 1,
 			},
 			create: {
-				cartId: cart.id,
+				wishlistId: wishlist.id,
 				listingId: payload.listingId,
 				quantity: 1,
 			},
@@ -88,21 +88,21 @@ export const cartService = {
 	},
 
 	async removeItem(userId: string, listingId: string) {
-		const cart = await getOrCreateCart(userId);
+		const wishlist = await getOrCreateWishlist(userId);
 
-		await prisma.cartItem.deleteMany({
+		await prisma.wishlistItem.deleteMany({
 			where: {
-				cartId: cart.id,
+				wishlistId: wishlist.id,
 				listingId,
 			},
 		});
 	},
 
 	async clear(userId: string) {
-		const cart = await getOrCreateCart(userId);
+		const wishlist = await getOrCreateWishlist(userId);
 
-		await prisma.cartItem.deleteMany({
-			where: { cartId: cart.id },
+		await prisma.wishlistItem.deleteMany({
+			where: { wishlistId: wishlist.id },
 		});
 	},
 };
