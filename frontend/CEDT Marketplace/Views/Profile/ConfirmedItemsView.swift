@@ -7,7 +7,7 @@ struct ConfirmedItemsView: View {
         ListingHistoryListView(
             listings: viewModel.confirmedListings,
             emptyTitle: "No items in transit",
-            emptyMessage: "Items waiting for pickup or already handed over will show up here.",
+            emptyMessage: "Items waiting for pickup or already handed over\nwill show up here.",
             emptyIcon: "shippingbox"
         )
         .navigationTitle("Confirmed Items")

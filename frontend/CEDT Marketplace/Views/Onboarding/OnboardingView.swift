@@ -1,99 +1,117 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    private var illustrationSize: CGFloat {
+        verticalSizeClass == .compact ? 120 : 180
+    }
+
+    private var glowSize: CGFloat {
+        verticalSizeClass == .compact ? 200 : 300
+    }
+
+    private var floatOffset: CGFloat {
+        verticalSizeClass == .compact ? 85 : 130
+    }
+
+    private var floatYOffset: CGFloat {
+        verticalSizeClass == .compact ? 40 : 60
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
+            ScrollView(.vertical) {
+                VStack(spacing: verticalSizeClass == .compact ? 16 : 32) {
+                    Spacer(minLength: verticalSizeClass == .compact ? 8 : 24)
 
-                // Gear and Icon
-                ZStack {
-                    // Background Glow Shadow
-                    Circle()
-                        .fill(Color.pink.opacity(0.2))
-                        .frame(width: 300, height: 300)
-                        .blur(radius: 50)
+                    // Gear and Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.pink.opacity(0.2))
+                            .frame(width: glowSize, height: glowSize)
+                            .blur(radius: 50)
 
-                    // 2 Gears
-                    Image(systemName: "gearshape.2.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 180, height: 180)
-                        .foregroundColor(Color(.systemGray2))
-                        .padding(40)
-                        .background(
-                            RoundedRectangle(cornerRadius: 50)
-                                .fill(Color(.white))
-                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-                        )
+                        Image(systemName: "gearshape.2.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: illustrationSize, height: illustrationSize)
+                            .foregroundColor(Color(.systemGray2))
+                            .padding(illustrationSize * 0.22)
+                            .background(
+                                RoundedRectangle(cornerRadius: 50)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                            )
 
-                    // Small icon
-                    floatingIcon(name: "cpu", color: .pink, x: 130, y: -60)
-                    floatingIcon(name: "wrench.and.screwdriver.fill", color: .blue, x: -130, y: 60)
-                }
-
-                Spacer()
-
-                // Text Section
-                VStack(spacing: 12) {
-                    Text("INNOVATION EXCHANGE")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.pink)
-                        .kerning(1.2)
-
-                    Text("**CEDT** Marketplace")
-                        .font(.system(size: 34, weight: .black))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(2)
-
-                    Text("Pass on your electronics and robotics gear. \nBuilt for students, by students.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                Spacer()
-
-                // Buttons
-                VStack(spacing: 12) {
-                    NavigationLink(destination: LoginView()) {
-                        Text("Login")
-                            .font(.title3).bold()
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                        floatingIcon(name: "cpu", x: floatOffset, y: -floatYOffset)
+                        floatingIcon(name: "wrench.and.screwdriver.fill", x: -floatOffset, y: floatYOffset)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.accentPrimary)
-                    .cornerRadius(18)
+                    .frame(height: glowSize)
 
-                    NavigationLink(destination: RegisterView()) {
-                        Text("Register")
-                            .font(.title3)
-                            .fontWeight(.medium)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                    Spacer(minLength: verticalSizeClass == .compact ? 4 : 16)
+
+                    // Text Section
+                    VStack(spacing: 12) {
+                        Text("INNOVATION EXCHANGE")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.pink)
+                            .kerning(1.2)
+
+                        Text("**CEDT** Marketplace")
+                            .font(.system(size: verticalSizeClass == .compact ? 26 : 34, weight: .black))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(2)
+
+                        Text("Pass on your electronics and robotics gear. \nBuilt for students, by students.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .buttonStyle(.bordered)
-                    .cornerRadius(18)
-                }
 
-                // Footer
-                HStack {
-                    Circle().fill(.red).frame(width: 6, height: 6)
-                    Text("Chulalongkorn University Engineering")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
+                    Spacer(minLength: verticalSizeClass == .compact ? 4 : 16)
+
+                    // Buttons
+                    VStack(spacing: 12) {
+                        NavigationLink(destination: LoginView()) {
+                            Text("Login")
+                                .font(.title3).bold()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.accentPrimary)
+                        .cornerRadius(18)
+
+                        NavigationLink(destination: RegisterView()) {
+                            Text("Register")
+                                .font(.title3)
+                                .fontWeight(.medium)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.bordered)
+                        .cornerRadius(18)
+
+                        HStack {
+                            Circle().fill(.red).frame(width: 6, height: 6)
+                            Text("Chulalongkorn University Engineering")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 10)
+                    }
                 }
-                .padding(.top, 10)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
             }
-            .padding(.horizontal, 24)
         }
     }
 
-    func floatingIcon(name: String, color _: Color, x: CGFloat, y: CGFloat) -> some View {
+    private func floatingIcon(name: String, x: CGFloat, y: CGFloat) -> some View {
         Image(systemName: name)
             .padding(10)
-            .background(Color.white)
+            .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .shadow(radius: 5)
             .offset(x: x, y: y)

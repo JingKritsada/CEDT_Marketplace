@@ -52,7 +52,7 @@ struct ListingRowView: View {
             .frame(maxWidth: .infinity, minHeight: thumbnailSize, alignment: .topLeading)
         }
         .padding(12)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 

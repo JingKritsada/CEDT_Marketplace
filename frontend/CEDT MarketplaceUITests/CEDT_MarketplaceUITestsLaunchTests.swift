@@ -1,10 +1,3 @@
-//
-//  CEDT_MarketplaceUITestsLaunchTests.swift
-//  CEDT MarketplaceUITests
-//
-//  Created by Kritsada Limsripraphan on 18/4/2569 BE.
-//
-
 import XCTest
 
 final class CEDT_MarketplaceUITestsLaunchTests: XCTestCase {

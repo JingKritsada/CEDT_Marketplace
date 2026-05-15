@@ -258,7 +258,7 @@ struct CheckoutView: View {
             .padding(.vertical, 14)
         }
         .background(
-            Color.white
+            Color(.systemBackground)
                 .shadow(color: .black.opacity(0.05), radius: 8, y: -4)
                 .ignoresSafeArea(edges: .bottom)
         )
@@ -276,7 +276,7 @@ struct CheckoutView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
     }
 }

@@ -39,7 +39,7 @@ struct ListingHistoryListView: View {
                 .font(.system(size: 48, weight: .regular))
                 .foregroundColor(.accentPrimary.opacity(0.6))
                 .padding(18)
-                .background(Circle().fill(Color.white))
+                .background(Circle().fill(Color(.systemBackground)))
 
             VStack(spacing: 6) {
                 Text(emptyTitle)

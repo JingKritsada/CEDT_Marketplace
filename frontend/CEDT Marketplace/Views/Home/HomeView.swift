@@ -44,7 +44,7 @@ struct HomeView: View {
                 searchBar()
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Color.white)
+                    .background(Color(.systemBackground))
             }
             .sheet(isPresented: $showFilters) {
                 FilterModalView(activeQuery: $viewModel.activeQuery)

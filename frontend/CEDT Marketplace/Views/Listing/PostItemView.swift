@@ -170,7 +170,7 @@ struct PostItemView: View {
             content()
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
     }
 

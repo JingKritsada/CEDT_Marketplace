@@ -1,10 +1,3 @@
-//
-//  CEDT_MarketplaceUITests.swift
-//  CEDT MarketplaceUITests
-//
-//  Created by Kritsada Limsripraphan on 18/4/2569 BE.
-//
-
 import XCTest
 
 final class CEDT_MarketplaceUITests: XCTestCase {
@@ -14,7 +7,8 @@ final class CEDT_MarketplaceUITests: XCTestCase {
         // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
 
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests
+        // before they run. The setUp method is a good place to do this.
     }
 
     override func tearDownWithError() throws {

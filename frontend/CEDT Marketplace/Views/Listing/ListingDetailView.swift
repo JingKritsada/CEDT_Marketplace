@@ -100,7 +100,7 @@ struct ListingDetailView: View {
                         .fontWeight(.semibold)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.9))
+                        .background(.regularMaterial)
                         .foregroundColor(.primary)
                         .clipShape(Capsule())
                         .padding(12)
@@ -118,7 +118,7 @@ struct ListingDetailView: View {
             .foregroundColor(.secondary)
         }
         .padding(12)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
@@ -295,7 +295,7 @@ struct ListingDetailView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
@@ -527,7 +527,7 @@ struct ListingDetailView: View {
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 16)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .alert("Confirm receipt?", isPresented: $showConfirmReceiptAlert) {
             Button("Confirm", role: .none) {
                 Task {

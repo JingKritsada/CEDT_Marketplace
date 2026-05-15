@@ -100,7 +100,7 @@ struct ListingImagePickerView: View {
                 .foregroundColor(.secondary)
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }

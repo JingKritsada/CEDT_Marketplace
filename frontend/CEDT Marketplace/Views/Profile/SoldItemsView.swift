@@ -7,7 +7,7 @@ struct SoldItemsView: View {
         ListingHistoryListView(
             listings: viewModel.soldListings,
             emptyTitle: "No sold items yet",
-            emptyMessage: "Once a buyer confirms receipt, those items will show up here.",
+            emptyMessage: "Once a buyer confirms receipt,\nthose items will show up here.",
             emptyIcon: "checkmark.seal"
         )
         .navigationTitle("Sold Items")

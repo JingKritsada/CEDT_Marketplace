@@ -70,7 +70,7 @@ struct ListingCardView: View {
                 Text((listing.category?.name ?? "No Category").uppercased())
                     .font(.system(size: 10, weight: .heavy))
                     .padding(6)
-                    .background(Color.white.opacity(0.8))
+                    .background(.regularMaterial)
                     .foregroundColor(.pink)
                     .cornerRadius(8)
                     .padding(8)
@@ -100,7 +100,7 @@ struct ListingCardView: View {
             .padding(.bottom, 8)
         }
         .frame(maxWidth: .infinity)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .cornerRadius(15)
     }
 }

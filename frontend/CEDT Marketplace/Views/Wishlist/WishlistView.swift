@@ -92,7 +92,7 @@ struct WishlistView: View {
 
             actionStrip(for: item)
         }
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
@@ -156,12 +156,12 @@ struct WishlistView: View {
                 .font(.system(size: 56, weight: .regular))
                 .foregroundColor(.accentPrimary.opacity(0.6))
                 .padding(20)
-                .background(Circle().fill(Color.white))
+                .background(Circle().fill(Color(.systemBackground)))
 
             VStack(spacing: 6) {
                 Text("Your wishlist is empty")
                     .font(.title3.weight(.semibold))
-                Text("Tap the heart on any listing to save it here for later.")
+                Text("Tap the heart on any listing \nto save it here for later.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)

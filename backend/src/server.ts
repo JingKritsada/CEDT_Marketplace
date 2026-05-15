@@ -1,7 +1,18 @@
 import { createServer } from "node:http";
+import { networkInterfaces } from "node:os";
 
 import { app } from "./app.js";
 import { env } from "./config/env.js";
+
+function getLanIP(): string | null {
+	const nets = networkInterfaces();
+	for (const iface of Object.values(nets)) {
+		for (const net of iface ?? []) {
+			if (net.family === "IPv4" && !net.internal) return net.address;
+		}
+	}
+	return null;
+}
 
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
@@ -35,6 +46,8 @@ server.listen(env.PORT, () => {
 			: `${YELLOW}${env.NODE_ENV}${RESET}`
 	);
 	log("Local", `${CYAN}http://localhost:${env.PORT}${RESET}`);
+	const lanIP = getLanIP();
+	if (lanIP) log("Network", `${CYAN}http://${lanIP}:${env.PORT}${RESET}`);
 	log("Health", `${DIM}http://localhost:${env.PORT}/health${RESET}`);
 	log("Docs", `${DIM}http://localhost:${env.PORT}/api-docs${RESET}`);
 	log("Started at", `${DIM}${new Date().toLocaleString("en-GB")}${RESET}`);

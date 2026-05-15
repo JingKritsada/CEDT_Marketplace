@@ -109,7 +109,7 @@ struct ProfileView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
         .padding(.horizontal, 20)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
     }
 
@@ -213,7 +213,7 @@ struct ProfileView: View {
             .font(.subheadline.weight(.semibold))
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
     }
 
@@ -287,7 +287,7 @@ struct ProfileView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
     }
 
@@ -340,7 +340,7 @@ struct ProfileView: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity)
-            .background(Color.white)
+            .background(Color(.systemBackground))
             .foregroundColor(.red)
             .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
         }
@@ -353,11 +353,12 @@ struct ProfileView: View {
     }
 }
 
-
-// Wrapper to avoid retroactive conformance on `URL`.
+/// Wrapper to avoid retroactive conformance on `URL`.
 private struct IdentifiableURL: Identifiable {
     let url: URL
-    var id: String { url.absoluteString }
+    var id: String {
+        url.absoluteString
+    }
 }
 
 #Preview {

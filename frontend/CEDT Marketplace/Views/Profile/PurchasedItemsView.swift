@@ -7,7 +7,7 @@ struct PurchasedItemsView: View {
         ListingHistoryListView(
             listings: viewModel.purchasedListings,
             emptyTitle: "No purchases yet",
-            emptyMessage: "Items you've bought from other students will appear here.",
+            emptyMessage: "Items you've bought from other students\nwill appear here.",
             emptyIcon: "bag"
         )
         .navigationTitle("Purchased Items")
