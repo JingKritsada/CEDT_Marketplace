@@ -70,6 +70,27 @@ final class ProfileViewModel: ObservableObject {
         }
     }
 
+    func updateDisplayInfo(displayName: String, avatarData: Data?) async {
+        isLoading = true
+        defer { isLoading = false }
+        var uploadedAvatarUrl: String? = nil
+        if let data = avatarData {
+            uploadedAvatarUrl = try? await ImageUploadService().uploadListingImages([data]).first
+        }
+        do {
+            let payload = UpdateProfileRequest(
+                displayName: displayName,
+                avatarUrl: uploadedAvatarUrl,
+                lineId: nil, instagram: nil, facebookUrl: nil
+            )
+            profile = try await userService.updateProfile(payload)
+        } catch let error as NetworkError {
+            errorMessage = error.userMessage
+        } catch {
+            errorMessage = NetworkError.unknown.userMessage
+        }
+    }
+
     func updateSocialLinks(lineId: String?, instagram: String?, facebookUrl: String?) async {
         isLoading = true
         defer { isLoading = false }

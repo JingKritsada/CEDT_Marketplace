@@ -7,26 +7,29 @@ struct PrimaryButton: View {
     var isLoading: Bool = false
 
     var body: some View {
-        Button(action: action) {
-            if isLoading {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .tint(.white)
-                    .scaleEffect(1.5)
-                    .frame(maxWidth: .infinity)
-                    .padding(paddingSize + 4)
-            } else {
+        Button(action: isLoading ? {} : action) {
+            ZStack {
                 Text(title)
                     .frame(maxWidth: .infinity)
                     .padding(paddingSize)
+                    .opacity(isLoading ? 0 : 1)
+
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+                    .opacity(isLoading ? 1 : 0)
             }
         }
         .buttonStyle(.borderedProminent)
         .tint(.accentPrimary)
+        .disabled(isLoading)
     }
 }
 
 #Preview {
-    PrimaryButton(title: "Primary", action: {})
-        .padding()
+    VStack(spacing: 16) {
+        PrimaryButton(title: "Primary", action: {})
+        PrimaryButton(title: "Loading", action: {}, isLoading: true)
+    }
+    .padding()
 }

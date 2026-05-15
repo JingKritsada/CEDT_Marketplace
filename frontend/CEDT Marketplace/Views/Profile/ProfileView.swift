@@ -1,13 +1,24 @@
 import Combine
+import PhotosUI
 import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject private var session: SessionViewModel
     @StateObject private var viewModel = ProfileViewModel()
 
+    // Hero edit state
+    @State private var isEditingProfile = false
+    @State private var editDisplayName = ""
+    @State private var avatarPickerItem: PhotosPickerItem?
+    @State private var pendingAvatarData: Data?
+    @State private var pendingAvatarImage: UIImage?
+
+    // Social links edit state
+    @State private var isEditingSocials = false
     @State private var lineId = ""
     @State private var instagram = ""
     @State private var facebookUrl = ""
+
     @State private var showLogoutAlert = false
 
     private let cardCornerRadius: CGFloat = 24
@@ -42,11 +53,7 @@ struct ProfileView: View {
             .navigationTitle("Profile")
             .task {
                 await viewModel.loadProfile()
-                if let profile = viewModel.profile {
-                    lineId = profile.lineId ?? ""
-                    instagram = profile.instagram ?? ""
-                    facebookUrl = profile.facebookUrl ?? ""
-                }
+                seedEditFields()
             }
             .refreshable { await viewModel.loadProfile() }
             .sheet(item: Binding<IdentifiableURL?>(
@@ -65,8 +72,6 @@ struct ProfileView: View {
                         }
                 }
                 .onDisappear {
-                    // After the buyer finishes (or aborts) Stripe onboarding, force-pull
-                    // the latest status from the backend so the UI reflects reality.
                     Task { await viewModel.refreshSellerStatus() }
                 }
             }
@@ -75,15 +80,52 @@ struct ProfileView: View {
                 LocalNotifier.error(message)
                 viewModel.errorMessage = nil
             }
+            .onChange(of: avatarPickerItem) { _, newItem in
+                Task {
+                    guard let newItem,
+                          let data = try? await newItem.loadTransferable(type: Data.self),
+                          let uiImage = UIImage(data: data) else { return }
+                    pendingAvatarData = data
+                    pendingAvatarImage = uiImage
+                }
+            }
         }
         .background(Color(.systemGray6))
     }
 
-    // MARK: - Hero
+    // MARK: - Helpers
+
+    private func seedEditFields() {
+        guard let profile = viewModel.profile else { return }
+        editDisplayName = profile.displayName
+        lineId = profile.lineId ?? ""
+        instagram = profile.instagram ?? ""
+        facebookUrl = profile.facebookUrl ?? ""
+    }
+
+    // MARK: - Hero card
 
     private func heroCard(_ profile: UserProfile) -> some View {
         VStack(spacing: 16) {
-            avatar(profile)
+            if isEditingProfile {
+                heroEditContent(profile)
+            } else {
+                heroReadContent(profile)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 20)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+        .animation(.easeInOut(duration: 0.2), value: isEditingProfile)
+    }
+
+    private func heroReadContent(_ profile: UserProfile) -> some View {
+        VStack(spacing: 16) {
+            ZStack(alignment: .bottomTrailing) {
+                avatar(profile)
+            }
 
             VStack(spacing: 4) {
                 Text(profile.displayName)
@@ -105,12 +147,110 @@ struct ProfileView: View {
                     tint: .yellow
                 )
             }
+
+            Button {
+                editDisplayName = profile.displayName
+                pendingAvatarData = nil
+                pendingAvatarImage = nil
+                isEditingProfile = true
+            } label: {
+                Label("Edit profile", systemImage: "pencil")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.accentPrimary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(Color.accentPrimary.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .padding(.horizontal, 20)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+    }
+
+    private func heroEditContent(_ profile: UserProfile) -> some View {
+        VStack(spacing: 20) {
+            // Avatar picker
+            PhotosPicker(selection: $avatarPickerItem, matching: .images) {
+                ZStack(alignment: .bottomTrailing) {
+                    Group {
+                        if let uiImage = pendingAvatarImage {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            avatar(profile)
+                        }
+                    }
+                    .frame(width: 88, height: 88)
+                    .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(Color.accentPrimary.opacity(0.3), lineWidth: 2))
+
+                    Circle()
+                        .fill(Color.accentPrimary)
+                        .frame(width: 28, height: 28)
+                        .overlay(
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.white)
+                        )
+                        .offset(x: 4, y: 4)
+                }
+            }
+            .buttonStyle(.plain)
+
+            // Display name field
+            VStack(alignment: .leading, spacing: 6) {
+                Text("DISPLAY NAME")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+
+                TextField("Display name", text: $editDisplayName)
+                    .textInputAutocapitalization(.words)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Save / Cancel
+            HStack(spacing: 12) {
+                Button("Cancel") {
+                    isEditingProfile = false
+                    pendingAvatarData = nil
+                    pendingAvatarImage = nil
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .buttonStyle(.plain)
+
+                PrimaryButton(
+                    title: "Save",
+                    action: {
+                        Task {
+                            let name = editDisplayName.trimmingCharacters(in: .whitespaces)
+                            guard !name.isEmpty else { return }
+                            await viewModel.updateDisplayInfo(
+                                displayName: name,
+                                avatarData: pendingAvatarData
+                            )
+                            if viewModel.errorMessage == nil {
+                                isEditingProfile = false
+                                pendingAvatarData = nil
+                                pendingAvatarImage = nil
+                                LocalNotifier.success("Profile updated.", title: "Saved")
+                            }
+                        }
+                    },
+                    paddingSize: 10,
+                    isLoading: viewModel.isLoading
+                )
+                .font(.subheadline.weight(.semibold))
+            }
+        }
     }
 
     private func avatar(_ profile: UserProfile) -> some View {
@@ -179,42 +319,122 @@ struct ProfileView: View {
 
     private var socialLinksCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Social links", systemImage: "link")
-                .font(.headline)
-                .foregroundColor(.primary)
-
-            stackedField(label: "LINE ID", placeholder: "@your-line-id", text: $lineId)
-            stackedField(
-                label: "Instagram", placeholder: "https://instagram.com/...",
-                text: $instagram, keyboardType: .URL
-            )
-            stackedField(
-                label: "Facebook URL", placeholder: "https://facebook.com/...",
-                text: $facebookUrl, keyboardType: .URL
-            )
-
-            PrimaryButton(
-                title: "Save",
-                action: {
-                    Task {
-                        await viewModel.updateSocialLinks(
-                            lineId: lineId, instagram: instagram, facebookUrl: facebookUrl
-                        )
-                        if viewModel.errorMessage == nil {
-                            LocalNotifier.success(
-                                "Social links updated.", title: "Profile saved"
-                            )
-                        }
+            HStack {
+                Label("Social links", systemImage: "link")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+                if !isEditingSocials {
+                    Button {
+                        isEditingSocials = true
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.accentPrimary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.accentPrimary.opacity(0.1))
+                            .clipShape(Capsule())
                     }
-                },
-                paddingSize: 6,
-                isLoading: viewModel.isLoading
-            )
-            .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if isEditingSocials {
+                socialEditFields
+
+                HStack(spacing: 12) {
+                    Button("Cancel") {
+                        guard let profile = viewModel.profile else { return }
+                        lineId = profile.lineId ?? ""
+                        instagram = profile.instagram ?? ""
+                        facebookUrl = profile.facebookUrl ?? ""
+                        isEditingSocials = false
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .buttonStyle(.plain)
+
+                    PrimaryButton(
+                        title: "Save",
+                        action: {
+                            Task {
+                                await viewModel.updateSocialLinks(
+                                    lineId: lineId.isEmpty ? nil : lineId,
+                                    instagram: instagram.isEmpty ? nil : instagram,
+                                    facebookUrl: facebookUrl.isEmpty ? nil : facebookUrl
+                                )
+                                if viewModel.errorMessage == nil {
+                                    isEditingSocials = false
+                                    LocalNotifier.success("Social links updated.", title: "Saved")
+                                }
+                            }
+                        },
+                        paddingSize: 10,
+                        isLoading: viewModel.isLoading
+                    )
+                    .font(.subheadline.weight(.semibold))
+                }
+            } else {
+                socialReadRows
+            }
         }
         .padding(16)
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+        .animation(.easeInOut(duration: 0.2), value: isEditingSocials)
+    }
+
+    private var socialReadRows: some View {
+        VStack(spacing: 0) {
+            socialReadRow(icon: "message.fill", label: "LINE", value: lineId, color: .green)
+            Divider().padding(.vertical, 8)
+            socialReadRow(icon: "camera.fill", label: "Instagram", value: instagram, color: .purple)
+            Divider().padding(.vertical, 8)
+            socialReadRow(icon: "person.2.fill", label: "Facebook", value: facebookUrl, color: .blue)
+        }
+    }
+
+    private func socialReadRow(icon: String, label: String, value: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(color.opacity(0.12)).frame(width: 32, height: 32)
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(color)
+            }
+            Text(label)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.primary)
+            Spacer()
+            Text(value.isEmpty ? "Not set" : value)
+                .font(.subheadline)
+                .foregroundColor(value.isEmpty ? .secondary.opacity(0.6) : .secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+    }
+
+    private var socialEditFields: some View {
+        VStack(spacing: 12) {
+            stackedField(label: "LINE ID", placeholder: "@your-line-id", text: $lineId)
+            stackedField(
+                label: "Instagram",
+                placeholder: "https://instagram.com/...",
+                text: $instagram,
+                keyboardType: .URL
+            )
+            stackedField(
+                label: "Facebook URL",
+                placeholder: "https://facebook.com/...",
+                text: $facebookUrl,
+                keyboardType: .URL
+            )
+        }
     }
 
     private func stackedField(
@@ -223,7 +443,7 @@ struct ProfileView: View {
         text: Binding<String>,
         keyboardType: UIKeyboardType = .default
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(label.uppercased())
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.secondary)
@@ -233,9 +453,9 @@ struct ProfileView: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .padding(.horizontal, 14)
-                .padding(.vertical, 14)
+                .padding(.vertical, 12)
                 .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 
@@ -252,9 +472,7 @@ struct ProfileView: View {
                 title: "Posted Items",
                 subtitle: "\(viewModel.postedListings.count) item\(viewModel.postedListings.count == 1 ? "" : "s")",
                 systemImage: "tag.fill", tint: .accentPrimary
-            ) {
-                PostedItemsView(viewModel: viewModel)
-            }
+            ) { PostedItemsView(viewModel: viewModel) }
 
             Divider().padding(.vertical, 6)
 
@@ -262,9 +480,7 @@ struct ProfileView: View {
                 title: "Purchased Items",
                 subtitle: "\(viewModel.purchasedListings.count) item\(viewModel.purchasedListings.count == 1 ? "" : "s")",
                 systemImage: "bag.fill", tint: .statusInfo
-            ) {
-                PurchasedItemsView(viewModel: viewModel)
-            }
+            ) { PurchasedItemsView(viewModel: viewModel) }
 
             Divider().padding(.vertical, 6)
 
@@ -272,9 +488,7 @@ struct ProfileView: View {
                 title: "Sold Items",
                 subtitle: "\(viewModel.soldListings.count) item\(viewModel.soldListings.count == 1 ? "" : "s")",
                 systemImage: "checkmark.seal.fill", tint: .statusAvailable
-            ) {
-                SoldItemsView(viewModel: viewModel)
-            }
+            ) { SoldItemsView(viewModel: viewModel) }
 
             Divider().padding(.vertical, 6)
 
@@ -282,9 +496,7 @@ struct ProfileView: View {
                 title: "Confirmed Items",
                 subtitle: "\(viewModel.confirmedListings.count) item\(viewModel.confirmedListings.count == 1 ? "" : "s")",
                 systemImage: "shippingbox.fill", tint: .statusReserved
-            ) {
-                ConfirmedItemsView(viewModel: viewModel)
-            }
+            ) { ConfirmedItemsView(viewModel: viewModel) }
         }
         .padding(16)
         .background(Color(.systemBackground))
@@ -298,8 +510,7 @@ struct ProfileView: View {
         NavigationLink(destination: destination()) {
             HStack(spacing: 14) {
                 ZStack {
-                    Circle().fill(tint.opacity(0.15))
-                        .frame(width: 40, height: 40)
+                    Circle().fill(tint.opacity(0.15)).frame(width: 40, height: 40)
                     Image(systemName: systemImage)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(tint)

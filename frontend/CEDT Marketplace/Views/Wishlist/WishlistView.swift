@@ -28,12 +28,8 @@ struct WishlistView: View {
             .toolbar {
                 if let wishlist = viewModel.wishlist, !wishlist.items.isEmpty {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            showClearAlert = true
-                        } label: {
-                            Text("Clear")
-                                .foregroundColor(.accentPrimary)
-                        }
+                        Button("Clear") { showClearAlert = true }
+                            .foregroundColor(.accentPrimary)
                     }
                 }
             }
@@ -54,31 +50,43 @@ struct WishlistView: View {
         .background(Color(.systemGray6))
     }
 
+    // MARK: - Content
+
     private func contentList(_ wishlist: Wishlist) -> some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 12) {
+        List {
+            Section {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Saved for later")
                         .font(.title2.weight(.bold))
-                        .foregroundColor(.primary)
                     Spacer()
                     Text("\(wishlist.items.count) item\(wishlist.items.count == 1 ? "" : "s")")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 4)
-                .padding(.bottom, 4)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 0, trailing: 4))
+            }
 
-                LazyVStack(spacing: 12) {
-                    ForEach(wishlist.items) { item in
-                        wishlistRow(item)
-                    }
+            Section {
+                ForEach(wishlist.items) { item in
+                    wishlistRow(item)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                Task { await viewModel.removeItem(listingId: item.listingId) }
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
+                        }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 24)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGray6))
     }
 
     private func wishlistRow(_ item: WishlistItem) -> some View {
@@ -90,65 +98,38 @@ struct WishlistView: View {
             }
             .buttonStyle(.plain)
 
-            actionStrip(for: item)
+            if isBuyable(item.listing) {
+                Divider()
+                    .padding(.horizontal, 12)
+
+                Button {
+                    pendingCheckout = item.listing
+                } label: {
+                    HStack(spacing: 6) {
+                        Spacer()
+                        Image(systemName: "bag.fill")
+                            .font(.caption.weight(.bold))
+                        Text("Buy Now")
+                            .font(.subheadline.weight(.semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                    }
+                    .foregroundColor(.accentPrimary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private func actionStrip(for item: WishlistItem) -> some View {
-        HStack(spacing: 10) {
-            Button(role: .destructive) {
-                Task { await viewModel.removeItem(listingId: item.listingId) }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "trash")
-                    Text("Remove")
-                }
-                .font(.subheadline.weight(.semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color(.systemGray6))
-                .foregroundColor(.red)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            if isBuyable(item.listing) {
-                Button {
-                    pendingCheckout = item.listing
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "bag.fill")
-                        Text("Buy Now")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.accentPrimary)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            } else {
-                Text("Not available")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-    }
-
     private func isBuyable(_ listing: Listing) -> Bool {
         listing.status == .available && !listing.isFree && listing.price > 0
     }
+
+    // MARK: - Empty state
 
     private var emptyState: some View {
         VStack(spacing: 16) {
