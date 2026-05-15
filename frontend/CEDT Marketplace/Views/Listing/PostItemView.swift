@@ -110,6 +110,10 @@ struct PostItemView: View {
             }
             .background(Color(.systemGray6))
             .toolbar(.hidden, for: .navigationBar)
+            .refreshable {
+                viewModel.resetForm()
+                await viewModel.loadOptions()
+            }
             .task {
                 await viewModel.loadOptions()
             }

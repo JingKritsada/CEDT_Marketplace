@@ -27,6 +27,17 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Inline page title (nav bar is hidden)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Profile")
+                            .font(.largeTitle.bold())
+                            .foregroundColor(.primary)
+                        Text("Manage your account")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 8)
+
                     if let profile = viewModel.profile {
                         heroCard(profile)
                         SellerDashboardCard(viewModel: viewModel)
@@ -50,7 +61,7 @@ struct ProfileView: View {
                 .padding(.bottom, 32)
             }
             .background(Color(.systemGray6))
-            .navigationTitle("Profile")
+            .toolbar(.hidden, for: .navigationBar)
             .task {
                 await viewModel.loadProfile()
                 seedEditFields()
@@ -115,7 +126,7 @@ struct ProfileView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 12)
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
         .animation(.easeInOut(duration: 0.2), value: isEditingProfile)
@@ -137,32 +148,33 @@ struct ProfileView: View {
                     .foregroundColor(.secondary)
             }
 
-            HStack(spacing: 24) {
+            HStack(spacing: 12) {
                 if let studentId = profile.studentId {
                     metaPill(systemImage: "graduationcap", value: studentId)
                 }
+
                 metaPill(
                     systemImage: "star.fill",
                     value: String(format: "%.1f (%d)", profile.rating.average, profile.rating.count),
                     tint: .yellow
                 )
-            }
 
-            Button {
-                editDisplayName = profile.displayName
-                pendingAvatarData = nil
-                pendingAvatarImage = nil
-                isEditingProfile = true
-            } label: {
-                Label("Edit profile", systemImage: "pencil")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.accentPrimary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
-                    .background(Color.accentPrimary.opacity(0.1))
-                    .clipShape(Capsule())
+				Button {
+					editDisplayName = profile.displayName
+					pendingAvatarData = nil
+					pendingAvatarImage = nil
+					isEditingProfile = true
+				} label: {
+					Label("Edit", systemImage: "pencil")
+						.font(.subheadline.weight(.semibold))
+						.foregroundColor(.accentPrimary)
+						.padding(.horizontal, 20)
+						.padding(.vertical, 8)
+						.background(Color.accentPrimary.opacity(0.1))
+						.clipShape(Capsule())
+				}
+				.buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
 

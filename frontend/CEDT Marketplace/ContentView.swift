@@ -27,10 +27,10 @@ struct MainTabView: View {
                     Label("Home", systemImage: "house")
                 }
 
-			WishlistView()
-				.tabItem {
-					Label("Wishlist", systemImage: "heart")
-				}
+            WishlistView()
+                .tabItem {
+                    Label("Wishlist", systemImage: "heart")
+                }
 
             PostItemView()
                 .tabItem {

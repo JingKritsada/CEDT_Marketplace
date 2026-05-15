@@ -6,7 +6,6 @@ struct HomeView: View {
     @State private var showFilters = false
     @State private var categories: [Category] = []
     @State private var selectedCategoryId: String? = nil
-    @State private var categoriesLoadFailed = false
 
     private let categoryService = CategoryService()
     private let gridColumns = [
@@ -23,7 +22,12 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 24)
                     } else if viewModel.listings.isEmpty {
-                        EmptyStateView(title: "No listings", message: "Try adjusting your filters or search.")
+                        EmptyStateView(
+                            title: "No listings",
+                            message: "Try adjusting your filters or search.",
+                            systemImage: "tray"
+                        )
+                        .frame(minHeight: 360)
                     } else {
                         LazyVGrid(columns: gridColumns, spacing: 16) {
                             ForEach(viewModel.listings) { listing in
@@ -38,16 +42,28 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
             }
+            .refreshable { await viewModel.loadListings() }
             .scrollContentBackground(.hidden)
             .background(Color(.systemGray6))
             .safeAreaInset(edge: .top) {
-                searchBar()
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color(.systemBackground))
+                SearchFilterBar(
+                    placeholder: "Search components...",
+                    searchText: $viewModel.searchText,
+                    selectedCategoryId: $selectedCategoryId,
+                    categories: categories,
+                    onFilterTap: { showFilters = true },
+                    onSubmit: { Task { await viewModel.searchListings() } },
+                    allLabel: "All"
+                )
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color(.systemBackground))
             }
             .sheet(isPresented: $showFilters) {
                 FilterModalView(activeQuery: $viewModel.activeQuery)
+            }
+            .onChange(of: selectedCategoryId) { _, newId in
+                updateCategoryFilter(newId)
             }
             .onChange(of: viewModel.activeQuery) { _, newValue in
                 selectedCategoryId = newValue?.categoryId
@@ -55,13 +71,7 @@ struct HomeView: View {
             }
             .task {
                 selectedCategoryId = viewModel.activeQuery?.categoryId
-                do {
-                    categories = try await categoryService.fetchCategories()
-                    categoriesLoadFailed = false
-                } catch {
-                    categories = []
-                    categoriesLoadFailed = true
-                }
+                categories = await (try? categoryService.fetchCategories()) ?? []
                 await viewModel.loadListings()
             }
         }
@@ -72,71 +82,6 @@ struct HomeView: View {
         query.categoryId = categoryId
         query.status = query.status ?? .available
         viewModel.activeQuery = query
-    }
-
-    private func categoryChip(title: String, isSelected: Bool, action: @escaping () -> Void)
-        -> some View
-    {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(isSelected ? .white : .primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(isSelected ? Color.accentColor : Color(.systemGray6))
-                .cornerRadius(12)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func searchBar() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.secondary)
-
-                    TextField("Search components...", text: $viewModel.searchText)
-                        .submitLabel(.search)
-                        .onSubmit {
-                            Task { await viewModel.searchListings() }
-                        }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-
-                Button {
-                    showFilters = true
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .frame(width: 44, height: 44)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                }
-            }
-
-            if !categoriesLoadFailed {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        categoryChip(title: "All Items", isSelected: selectedCategoryId == nil) {
-                            updateCategoryFilter(nil)
-                        }
-                        ForEach(categories) { category in
-                            categoryChip(title: category.name, isSelected: selectedCategoryId == category.id) {
-                                updateCategoryFilter(category.id)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-        }
     }
 }
 

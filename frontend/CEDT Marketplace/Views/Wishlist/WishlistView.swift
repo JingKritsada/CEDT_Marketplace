@@ -8,23 +8,99 @@ struct WishlistView: View {
     @StateObject private var viewModel = WishlistViewModel()
 
     @State private var showClearAlert = false
+    @State private var showFilters = false
     @State private var pendingCheckout: Listing?
+    @State private var searchText = ""
+    @State private var selectedCategoryId: String? = nil
+    @State private var categories: [Category] = []
+
+    private let categoryService = CategoryService()
+    private let gridColumns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
 
     var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.isLoading, viewModel.wishlist == nil {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let wishlist = viewModel.wishlist, !wishlist.items.isEmpty {
-                    contentList(wishlist)
-                } else {
-                    emptyState
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if viewModel.isLoading, viewModel.wishlist == nil {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 24)
+                    } else if let wishlist = viewModel.wishlist, !wishlist.items.isEmpty {
+                        let items = filteredItems(from: wishlist)
+                        if items.isEmpty {
+                            EmptyStateView(
+                                title: "No results",
+                                message: "No items match your search or filter.",
+                                systemImage: "magnifyingglass"
+                            )
+                            .frame(minHeight: 320)
+                        } else {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text("Saved for later")
+                                    .font(.title2.weight(.bold))
+                                Spacer()
+                                Text("\(items.count) item\(items.count == 1 ? "" : "s")")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 16)
+
+                            LazyVGrid(columns: gridColumns, spacing: 16) {
+                                ForEach(items) { item in
+                                    NavigationLink(
+                                        destination: ListingDetailView(listingId: item.listing.id)
+                                    ) {
+                                        ListingCardView(listing: item.listing)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            Task { await viewModel.removeItem(listingId: item.listingId) }
+                                        } label: {
+                                            Label("Remove from Wishlist", systemImage: "heart.slash")
+                                        }
+                                        if isBuyable(item.listing) {
+                                            Button {
+                                                pendingCheckout = item.listing
+                                            } label: {
+                                                Label("Buy Now", systemImage: "bag.fill")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
+                    } else {
+                        EmptyStateView(
+                            title: "Your wishlist is empty",
+                            message: "Tap the heart on any listing to save it here for later.",
+                            systemImage: "heart"
+                        )
+                        .frame(minHeight: 360)
+                    }
                 }
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
+            .refreshable { await viewModel.load() }
+            .scrollContentBackground(.hidden)
             .background(Color(.systemGray6))
-            .navigationTitle("Wishlist")
+            .safeAreaInset(edge: .top) {
+                SearchFilterBar(
+                    placeholder: "Search wishlist…",
+                    searchText: $searchText,
+                    selectedCategoryId: $selectedCategoryId,
+                    categories: categories,
+                    onFilterTap: { showFilters = true }
+                )
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color(.systemBackground))
+            }
             .toolbar {
                 if let wishlist = viewModel.wishlist, !wishlist.items.isEmpty {
                     ToolbarItem(placement: .navigationBarTrailing) {
@@ -44,113 +120,30 @@ struct WishlistView: View {
             } message: {
                 Text("This removes every saved item. You can save them again from any listing.")
             }
-            .task { await viewModel.load() }
-            .refreshable { await viewModel.load() }
+            .task {
+                categories = await (try? categoryService.fetchCategories()) ?? []
+                await viewModel.load()
+            }
         }
         .background(Color(.systemGray6))
     }
 
-    // MARK: - Content
+    // MARK: - Derived data
 
-    private func contentList(_ wishlist: Wishlist) -> some View {
-        List {
-            Section {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Saved for later")
-                        .font(.title2.weight(.bold))
-                    Spacer()
-                    Text("\(wishlist.items.count) item\(wishlist.items.count == 1 ? "" : "s")")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 0, trailing: 4))
-            }
-
-            Section {
-                ForEach(wishlist.items) { item in
-                    wishlistRow(item)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                Task { await viewModel.removeItem(listingId: item.listingId) }
-                            } label: {
-                                Label("Remove", systemImage: "trash")
-                            }
-                        }
-                }
-            }
+    private func filteredItems(from wishlist: Wishlist) -> [WishlistItem] {
+        wishlist.items.filter { item in
+            let matchesCategory =
+                selectedCategoryId == nil || item.listing.category?.id == selectedCategoryId
+            let matchesSearch =
+                searchText.isEmpty
+                    || item.listing.title.localizedCaseInsensitiveContains(searchText)
+                    || item.listing.description.localizedCaseInsensitiveContains(searchText)
+            return matchesCategory && matchesSearch
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color(.systemGray6))
-    }
-
-    private func wishlistRow(_ item: WishlistItem) -> some View {
-        VStack(spacing: 0) {
-            NavigationLink {
-                ListingDetailView(listingId: item.listing.id)
-            } label: {
-                ListingRowView(listing: item.listing)
-            }
-            .buttonStyle(.plain)
-
-            if isBuyable(item.listing) {
-                Divider()
-                    .padding(.horizontal, 12)
-
-                Button {
-                    pendingCheckout = item.listing
-                } label: {
-                    HStack(spacing: 6) {
-                        Spacer()
-                        Image(systemName: "bag.fill")
-                            .font(.caption.weight(.bold))
-                        Text("Buy Now")
-                            .font(.subheadline.weight(.semibold))
-                        Image(systemName: "chevron.right")
-                            .font(.caption2.weight(.semibold))
-                    }
-                    .foregroundColor(.accentPrimary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func isBuyable(_ listing: Listing) -> Bool {
         listing.status == .available && !listing.isFree && listing.price > 0
-    }
-
-    // MARK: - Empty state
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "heart")
-                .font(.system(size: 56, weight: .regular))
-                .foregroundColor(.accentPrimary.opacity(0.6))
-                .padding(20)
-                .background(Circle().fill(Color(.systemBackground)))
-
-            VStack(spacing: 6) {
-                Text("Your wishlist is empty")
-                    .font(.title3.weight(.semibold))
-                Text("Tap the heart on any listing \nto save it here for later.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, 32)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 20)
     }
 }
 

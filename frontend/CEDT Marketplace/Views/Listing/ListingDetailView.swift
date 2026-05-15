@@ -40,6 +40,7 @@ struct ListingDetailView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+        .refreshable { await viewModel.loadListing(id: listingId) }
         .scrollContentBackground(.hidden)
         .background(Color(.systemGray6))
         .navigationTitle("Details")
