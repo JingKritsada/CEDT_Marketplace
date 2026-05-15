@@ -88,14 +88,9 @@ struct LoginView: View {
                 // Button
                 PrimaryButton(
                     title: "Login",
-                    action: {
-                        Task { await viewModel.login(session: session) }
-                    },
-                    paddingSize: 8,
+                    action: { Task { await viewModel.login(session: session) } },
                     isLoading: viewModel.isLoading
                 )
-                .font(.title3.weight(.semibold))
-                .frame(maxWidth: .infinity)
 
                 // Register
                 HStack(spacing: 4) {

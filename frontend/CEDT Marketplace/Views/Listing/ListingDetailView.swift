@@ -566,11 +566,8 @@ struct ListingDetailView: View {
         PrimaryButton(
             title: "Confirm Receipt",
             action: { showConfirmReceiptAlert = true },
-            paddingSize: 8,
             isLoading: viewModel.isLoading
         )
-        .font(.title3.weight(.semibold))
-        .frame(maxWidth: .infinity)
     }
 
     private var addToWishlistButton: some View {
@@ -582,18 +579,16 @@ struct ListingDetailView: View {
                         "We saved this item so you can buy it later.", title: "Saved to wishlist"
                     )
                 }
-                // Failure path: errorMessage is set by the view model and the
-                // root .onChange below surfaces it as a single notification.
             }
         } label: {
             Image(systemName: viewModel.isAddedToWishlist ? "heart.fill" : "heart")
-                .font(.title3.weight(.semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(viewModel.isAddedToWishlist ? .secondary : .accentPrimary)
-                .padding(8)
+                .frame(width: 48, height: 48)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
-        .buttonStyle(.bordered)
-        .tint(viewModel.isAddedToWishlist ? .secondary : .accentPrimary)
-        .font(.title3.weight(.semibold))
+        .buttonStyle(.plain)
         .disabled(viewModel.isAddedToWishlist)
     }
 
@@ -601,15 +596,10 @@ struct ListingDetailView: View {
         PrimaryButton(
             title: "Purchase",
             action: {
-                if viewModel.listing != nil {
-                    showCheckout = true
-                }
+                if viewModel.listing != nil { showCheckout = true }
             },
-            paddingSize: 8,
             isLoading: viewModel.isLoading
         )
-        .font(.title3.weight(.semibold))
-        .frame(maxWidth: .infinity)
     }
 }
 

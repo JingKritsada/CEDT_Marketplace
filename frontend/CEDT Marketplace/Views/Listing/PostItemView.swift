@@ -101,11 +101,8 @@ struct PostItemView: View {
                                 showConfirmAlert = true
                             }
                         },
-                        paddingSize: 14,
                         isLoading: viewModel.isLoading
                     )
-                    .font(.title3.weight(.semibold))
-                    .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)

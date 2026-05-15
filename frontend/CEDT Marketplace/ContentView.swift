@@ -27,14 +27,14 @@ struct MainTabView: View {
                     Label("Home", systemImage: "house")
                 }
 
+			WishlistView()
+				.tabItem {
+					Label("Wishlist", systemImage: "heart")
+				}
+
             PostItemView()
                 .tabItem {
                     Label("Post", systemImage: "plus.circle")
-                }
-
-            WishlistView()
-                .tabItem {
-                    Label("Wishlist", systemImage: "heart")
                 }
 
             ProfileView()

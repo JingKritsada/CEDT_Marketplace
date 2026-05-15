@@ -214,18 +214,11 @@ struct ProfileView: View {
 
             // Save / Cancel
             HStack(spacing: 12) {
-                Button("Cancel") {
+                SecondaryButton("Cancel") {
                     isEditingProfile = false
                     pendingAvatarData = nil
                     pendingAvatarImage = nil
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .buttonStyle(.plain)
 
                 PrimaryButton(
                     title: "Save",
@@ -245,10 +238,8 @@ struct ProfileView: View {
                             }
                         }
                     },
-                    paddingSize: 10,
                     isLoading: viewModel.isLoading
                 )
-                .font(.subheadline.weight(.semibold))
             }
         }
     }
@@ -344,20 +335,13 @@ struct ProfileView: View {
                 socialEditFields
 
                 HStack(spacing: 12) {
-                    Button("Cancel") {
+                    SecondaryButton("Cancel") {
                         guard let profile = viewModel.profile else { return }
                         lineId = profile.lineId ?? ""
                         instagram = profile.instagram ?? ""
                         facebookUrl = profile.facebookUrl ?? ""
                         isEditingSocials = false
                     }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .buttonStyle(.plain)
 
                     PrimaryButton(
                         title: "Save",
@@ -374,10 +358,8 @@ struct ProfileView: View {
                                 }
                             }
                         },
-                        paddingSize: 10,
                         isLoading: viewModel.isLoading
                     )
-                    .font(.subheadline.weight(.semibold))
                 }
             } else {
                 socialReadRows

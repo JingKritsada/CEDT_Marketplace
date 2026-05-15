@@ -247,13 +247,9 @@ struct CheckoutView: View {
         VStack(spacing: 0) {
             PrimaryButton(
                 title: viewModel.subtotal == 0 ? "Free — confirm" : "Pay with card",
-                action: {
-                    Task { await viewModel.startCheckout() }
-                },
-                paddingSize: 10,
+                action: { Task { await viewModel.startCheckout() } },
                 isLoading: viewModel.isLoading || viewModel.isPaymentSheetActive
             )
-            .font(.headline.weight(.semibold))
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
         }

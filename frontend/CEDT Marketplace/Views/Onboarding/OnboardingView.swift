@@ -75,23 +75,25 @@ struct OnboardingView: View {
                     VStack(spacing: 12) {
                         NavigationLink(destination: LoginView()) {
                             Text("Login")
-                                .font(.title3).bold()
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 14)
+                                .background(Color.accentPrimary)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.accentPrimary)
-                        .cornerRadius(18)
+                        .buttonStyle(.plain)
 
                         NavigationLink(destination: RegisterView()) {
                             Text("Register")
-                                .font(.title3)
-                                .fontWeight(.medium)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.primary)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 14)
+                                .background(Color(.secondarySystemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-                        .buttonStyle(.bordered)
-                        .cornerRadius(18)
+                        .buttonStyle(.plain)
 
                         HStack {
                             Circle().fill(.red).frame(width: 6, height: 6)

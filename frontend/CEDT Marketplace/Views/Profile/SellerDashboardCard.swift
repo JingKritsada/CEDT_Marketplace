@@ -57,10 +57,8 @@ struct SellerDashboardCard: View {
             PrimaryButton(
                 title: "Become a Seller",
                 action: { Task { await viewModel.startSellerOnboarding() } },
-                paddingSize: 6,
                 isLoading: viewModel.isStartingOnboarding
             )
-            .font(.subheadline.weight(.semibold))
             .padding(.top, 4)
         }
     }
@@ -193,25 +191,12 @@ struct SellerDashboardCard: View {
                 PrimaryButton(
                     title: "Continue onboarding",
                     action: { Task { await viewModel.startSellerOnboarding() } },
-                    paddingSize: 4,
                     isLoading: viewModel.isStartingOnboarding
                 )
-                .font(.caption.weight(.semibold))
             }
 
-            Button {
+            SecondaryButton("Refresh", systemImage: "arrow.clockwise") {
                 Task { await viewModel.refreshSellerStatus() }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Refresh")
-                }
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color(.secondarySystemBackground))
-                .foregroundColor(.primary)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         .padding(.top, 2)
