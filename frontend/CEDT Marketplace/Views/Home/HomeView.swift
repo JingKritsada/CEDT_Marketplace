@@ -29,6 +29,15 @@ struct HomeView: View {
                         )
                         .frame(minHeight: 360)
                     } else {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Marketplace")
+                                .font(.title2.weight(.bold))
+                            Spacer()
+                            Text("\(viewModel.listings.count) item\(viewModel.listings.count == 1 ? "" : "s")")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.secondary)
+                        }
+
                         LazyVGrid(columns: gridColumns, spacing: 16) {
                             ForEach(viewModel.listings) { listing in
                                 NavigationLink(destination: ListingDetailView(listingId: listing.id)) {

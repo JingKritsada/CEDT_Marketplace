@@ -95,19 +95,13 @@ struct WishlistView: View {
                     searchText: $searchText,
                     selectedCategoryId: $selectedCategoryId,
                     categories: categories,
-                    onFilterTap: { showFilters = true }
+                    onFilterTap: { showFilters = true },
+                    onTrailingAction: viewModel.wishlist?.items.isEmpty == false
+                        ? { showClearAlert = true } : nil
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(Color(.systemBackground))
-            }
-            .toolbar {
-                if let wishlist = viewModel.wishlist, !wishlist.items.isEmpty {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Clear") { showClearAlert = true }
-                            .foregroundColor(.accentPrimary)
-                    }
-                }
             }
             .navigationDestination(item: $pendingCheckout) { listing in
                 CheckoutView(directListing: listing)

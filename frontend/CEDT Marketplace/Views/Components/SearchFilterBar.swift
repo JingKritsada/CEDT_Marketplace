@@ -19,12 +19,19 @@ struct SearchFilterBar: View {
     /// Label for the "select all" chip.
     var allLabel: String = "All"
 
+    /// Optional destructive trailing action (e.g. "Clear" for wishlist).
+    var onTrailingAction: (() -> Void)?
+    var trailingActionLabel: String = "Clear"
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 searchField
                 if let onFilterTap {
                     filterButton(action: onFilterTap)
+                }
+                if let onTrailingAction {
+                    trailingActionButton(action: onTrailingAction)
                 }
             }
 
@@ -68,6 +75,18 @@ struct SearchFilterBar: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.secondary)
                 .frame(width: 44, height: 44)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+        }
+    }
+
+    private func trailingActionButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(trailingActionLabel)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.red)
+                .frame(height: 44)
+                .padding(.horizontal, 12)
                 .background(Color(.systemGray6))
                 .cornerRadius(12)
         }

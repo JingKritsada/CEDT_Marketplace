@@ -18,10 +18,18 @@ final class PostItemViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
+    @Published var sellerProfile: SellerProfile?
+    @Published var isLoadingSeller = false
+
+    var isSellerActive: Bool {
+        sellerProfile?.canAcceptPayments == true
+    }
+
     private let listingService: ListingService
     private let imageUploadService: ImageUploadService
     private let categoryService: CategoryService
     private let pickupLocationService: PickupLocationService
+    private let sellerService: SellerOnboardingService
     private var imageData: [Data] = []
     private var cancellables = Set<AnyCancellable>()
 
@@ -29,12 +37,14 @@ final class PostItemViewModel: ObservableObject {
         listingService: ListingService? = nil,
         imageUploadService: ImageUploadService? = nil,
         categoryService: CategoryService? = nil,
-        pickupLocationService: PickupLocationService? = nil
+        pickupLocationService: PickupLocationService? = nil,
+        sellerService: SellerOnboardingService? = nil
     ) {
         self.listingService = listingService ?? ListingService()
         self.imageUploadService = imageUploadService ?? ImageUploadService()
         self.categoryService = categoryService ?? CategoryService()
         self.pickupLocationService = pickupLocationService ?? PickupLocationService()
+        self.sellerService = sellerService ?? SellerOnboardingService()
 
         setupBindings()
     }
@@ -61,6 +71,12 @@ final class PostItemViewModel: ObservableObject {
         guard imageData.indices.contains(index), imagePreviews.indices.contains(index) else { return }
         imageData.remove(at: index)
         imagePreviews.remove(at: index)
+    }
+
+    func loadSellerStatus() async {
+        isLoadingSeller = true
+        defer { isLoadingSeller = false }
+        sellerProfile = try? await sellerService.myProfile()
     }
 
     func loadOptions() async {

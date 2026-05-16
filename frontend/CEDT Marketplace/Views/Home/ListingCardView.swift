@@ -10,61 +10,60 @@ struct ListingCardView: View {
                     AsyncImage(url: URL(string: imageUrl)) { phase in
                         switch phase {
                         case .empty:
-                            ZStack {
-                                Color.gray.opacity(0.2)
-
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .tint(.gray)
-                                    .scaleEffect(1.5)
-                            }
-                            .aspectRatio(1, contentMode: .fill)
+                            Color(.systemBackground)
+								.opacity(0.5)
+                                .overlay(
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .tint(.secondary)
+                                        .scaleEffect(1.5)
+                                )
+                                .aspectRatio(1, contentMode: .fill)
 
                         case .failure:
-                            ZStack {
-                                Color.gray.opacity(0.2)
-
-                                VStack(spacing: 8) {
-                                    Image(systemName: "link")
-                                        .padding(.top, 18)
-                                        .font(.system(size: 28))
-                                        .foregroundColor(.gray)
-                                    Text("Invalid URL")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            .aspectRatio(1, contentMode: .fill)
+                            Color(.systemBackground)
+								.opacity(0.5)
+                                .aspectRatio(1, contentMode: .fill)
+                                .overlay(
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "link")
+                                            .font(.system(size: 28))
+                                            .foregroundColor(.secondary)
+                                        Text("Invalid URL")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                )
 
                         case let .success(image):
                             image
                                 .resizable()
-                                .aspectRatio(1, contentMode: .fill)
+                                .scaledToFill()
 
                         @unknown default:
-                            Color.gray.opacity(0.1)
+                            Color(.systemBackground)
+								.opacity(0.5)
                                 .aspectRatio(1, contentMode: .fill)
                         }
                     }
                     .frame(maxWidth: .infinity)
                     .clipped()
                 } else {
-                    ZStack {
-                        Color.gray.opacity(0.2)
-
-                        VStack(spacing: 8) {
-                            Image(systemName: "photo")
-                                .padding(.top, 18)
-                                .font(.system(size: 28))
-                                .foregroundColor(.gray)
-                            Text("No Image")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .aspectRatio(1, contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
+                    Color(.systemBackground)
+						.opacity(0.5)
+                        .aspectRatio(1, contentMode: .fill)
+                        .frame(maxWidth: .infinity)
+                        .overlay(
+                            VStack(spacing: 8) {
+                                Image(systemName: "photo")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.secondary)
+                                Text("No Image")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        )
+                        .clipped()
                 }
 
                 Text((listing.category?.name ?? "No Category").uppercased())

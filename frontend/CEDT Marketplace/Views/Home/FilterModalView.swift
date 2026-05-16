@@ -29,6 +29,7 @@ struct FilterModalView: View {
 
                 Section("Course") {
                     TextField("Course code", text: $viewModel.courseCode)
+                        .keyboardType(.numberPad)
                 }
             }
             .navigationTitle("Filters")

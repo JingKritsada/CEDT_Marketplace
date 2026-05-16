@@ -28,9 +28,9 @@ struct OnboardingView: View {
                     // Gear and Icon
                     ZStack {
                         Circle()
-                            .fill(Color.pink.opacity(0.2))
+                            .fill(Color.pink.opacity(0.5))
                             .frame(width: glowSize, height: glowSize)
-                            .blur(radius: 50)
+                            .blur(radius: 100)
 
                         Image(systemName: "gearshape.2.fill")
                             .resizable()

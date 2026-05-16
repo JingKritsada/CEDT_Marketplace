@@ -96,7 +96,7 @@ final class APIClient {
             // -999 (cancelled) means SwiftUI killed the parent Task — not a network failure.
             // Propagate as CancellationError so callers can ignore it instead of showing a banner.
             if ns.domain == NSURLErrorDomain, ns.code == NSURLErrorCancelled {
-                print("⏹ [API] \(method) \(urlStr) → cancelled (no error banner)")
+                print("⏺️ [API] \(method) \(urlStr) → cancelled (no error banner)")
                 throw CancellationError()
             }
             print(

@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 
 import { ApiError } from "@/utils/api-error.js";
 
-const uploadRoot = path.join(process.cwd(), "public", "uploads", "listings");
+const uploadRoot = path.join(process.cwd(), "public", "uploads", "img");
 
 const extensionByMimeType: Record<string, string> = {
 	"image/jpeg": ".jpg",
@@ -25,7 +25,7 @@ const ensureUploadDirectory = async () => {
 const buildPublicUrl = (req: Request, fileName: string) => {
 	const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-	return `${baseUrl}/uploads/listings/${fileName}`;
+	return `${baseUrl}/uploads/img/${fileName}`;
 };
 
 export const uploadService = {

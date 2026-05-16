@@ -18,91 +18,106 @@ struct PostItemView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     headerSection
 
-                    ListingImagePickerView(
-                        previews: viewModel.imagePreviews,
-                        onAdd: { dataItems in viewModel.addImages(from: dataItems) },
-                        onRemove: { index in
-                            viewModel.removeImage(at: index)
+                    if viewModel.isLoadingSeller {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
                         }
-                    )
-
-                    formCard(title: "Listing details", systemImage: "square.and.pencil") {
-                        stackedField(
-                            label: "Title", placeholder: "e.g. Raspberry Pi 4 Model B", text: $viewModel.title
-                        )
-                        multilineField(
-                            label: "Description",
-                            placeholder: "Mention condition, usage history, and what is included.",
-                            text: $viewModel.description
-                        )
+                        .padding(.vertical, 8)
+                    } else if !viewModel.isSellerActive {
+                        sellerGateBanner
                     }
 
-                    formCard(title: "Pricing", systemImage: "bahtsign.circle") {
-                        Toggle("Free item", isOn: $viewModel.isFree)
-                            .tint(.accentPrimary)
-
-                        stackedField(
-                            label: "Price",
-                            placeholder: "0",
-                            text: $viewModel.price,
-                            keyboardType: .numberPad,
-                            prefix: "฿",
-                            isDisabled: viewModel.isFree
-                        )
-                    }
-
-                    formCard(title: "Item info", systemImage: "tag") {
-                        pickerField(
-                            label: "Category",
-                            selection: $viewModel.selectedCategoryId,
-                            placeholder: "Select a category",
-                            options: viewModel.categories.map { ($0.id, $0.name) }
-                        )
-
-                        pickerField(
-                            label: "Pickup location",
-                            selection: $viewModel.selectedPickupLocationId,
-                            placeholder: "Select a pickup spot",
-                            options: viewModel.pickupLocations.map { ($0.id, "\($0.name)") }
-                        )
-
-                        pickerField(
-                            label: "Condition",
-                            selection: Binding(
-                                get: { viewModel.condition.rawValue },
-                                set: { newValue in
-                                    if let condition = ListingCondition(rawValue: newValue) {
-                                        viewModel.condition = condition
-                                    }
-                                }
-                            ),
-                            placeholder: "Condition",
-                            options: ListingCondition.allCases.map { ($0.rawValue, $0.displayName) }
-                        )
-
-                        stackedField(label: "Course code", placeholder: "2110101", text: $viewModel.courseCode)
-                    }
-
-                    if let errorMessage = viewModel.errorMessage {
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .foregroundColor(.red)
-
-                            Text(errorMessage)
-                                .font(.subheadline)
-                                .foregroundColor(.red)
-                        }
-                    }
-
-                    PrimaryButton(
-                        title: "Post Item",
-                        action: {
-                            if viewModel.validate() {
-                                showConfirmAlert = true
+                    Group {
+                        ListingImagePickerView(
+                            previews: viewModel.imagePreviews,
+                            onAdd: { dataItems in viewModel.addImages(from: dataItems) },
+                            onRemove: { index in
+                                viewModel.removeImage(at: index)
                             }
-                        },
-                        isLoading: viewModel.isLoading
-                    )
+                        )
+
+                        formCard(title: "Listing details", systemImage: "square.and.pencil") {
+                            stackedField(
+                                label: "Title", placeholder: "e.g. Raspberry Pi 4 Model B", text: $viewModel.title
+                            )
+                            multilineField(
+                                label: "Description",
+                                placeholder: "Mention condition, usage history, and what is included.",
+                                text: $viewModel.description
+                            )
+                        }
+
+                        formCard(title: "Pricing", systemImage: "bahtsign.circle") {
+                            Toggle("Free item", isOn: $viewModel.isFree)
+                                .tint(.accentPrimary)
+
+                            stackedField(
+                                label: "Price",
+                                placeholder: "0",
+                                text: $viewModel.price,
+                                keyboardType: .numberPad,
+                                prefix: "฿",
+                                isDisabled: viewModel.isFree
+                            )
+                        }
+
+                        formCard(title: "Item info", systemImage: "tag") {
+                            pickerField(
+                                label: "Category",
+                                selection: $viewModel.selectedCategoryId,
+                                placeholder: "Select a category",
+                                options: viewModel.categories.map { ($0.id, $0.name) }
+                            )
+
+                            pickerField(
+                                label: "Pickup location",
+                                selection: $viewModel.selectedPickupLocationId,
+                                placeholder: "Select a pickup spot",
+                                options: viewModel.pickupLocations.map { ($0.id, "\($0.name)") }
+                            )
+
+                            pickerField(
+                                label: "Condition",
+                                selection: Binding(
+                                    get: { viewModel.condition.rawValue },
+                                    set: { newValue in
+                                        if let condition = ListingCondition(rawValue: newValue) {
+                                            viewModel.condition = condition
+                                        }
+                                    }
+                                ),
+                                placeholder: "Condition",
+                                options: ListingCondition.allCases.map { ($0.rawValue, $0.displayName) }
+                            )
+
+                            stackedField(label: "Course code", placeholder: "2110101", text: $viewModel.courseCode)
+                        }
+
+                        if let errorMessage = viewModel.errorMessage {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .foregroundColor(.red)
+
+                                Text(errorMessage)
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                            }
+                        }
+
+                        PrimaryButton(
+                            title: "Post Item",
+                            action: {
+                                if viewModel.validate() {
+                                    showConfirmAlert = true
+                                }
+                            },
+                            isLoading: viewModel.isLoading
+                        )
+                    }
+                    .disabled(!viewModel.isSellerActive)
+                    .opacity(viewModel.isSellerActive ? 1 : 0.4)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
@@ -112,9 +127,11 @@ struct PostItemView: View {
             .toolbar(.hidden, for: .navigationBar)
             .refreshable {
                 viewModel.resetForm()
+                await viewModel.loadSellerStatus()
                 await viewModel.loadOptions()
             }
             .task {
+                await viewModel.loadSellerStatus()
                 await viewModel.loadOptions()
             }
             .onChange(of: viewModel.isFree) { _, isFree in
@@ -146,6 +163,46 @@ struct PostItemView: View {
             }
         }
         .background(Color(.systemGray6))
+    }
+
+    private var sellerGateBanner: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "storefront")
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
+
+                Text("Seller account required")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+            }
+
+            Text(sellerGateBannerMessage)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1.5)
+        )
+    }
+
+    private var sellerGateBannerMessage: String {
+        switch viewModel.sellerProfile?.connectStatus {
+        case .pending:
+            "Your seller account is under review. You'll be able to post listings once verification is complete."
+        case .restricted:
+            "Your Stripe account needs attention. Please complete the required steps in your profile to start selling."
+        case .rejected:
+            "Your seller application was not approved. Visit your profile for more details."
+        default:
+            "To post listings, you need to register as a seller and complete Stripe onboarding. Head to your profile to get started."
+        }
     }
 
     private var headerSection: some View {

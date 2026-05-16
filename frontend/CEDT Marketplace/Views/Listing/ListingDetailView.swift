@@ -518,7 +518,9 @@ struct ListingDetailView: View {
         Group {
             if shouldShowConfirmReceipt {
                 confirmReceiptButton
-            } else if !isCurrentUserSeller {
+            } else if isCurrentUserSeller {
+                sellerOwnListingBar
+            } else {
                 HStack(spacing: 12) {
                     addToWishlistButton
                     purchaseButton
@@ -561,6 +563,20 @@ struct ListingDetailView: View {
         guard let listing = viewModel.listing, let currentUserId else { return false }
         guard listing.buyerId == currentUserId else { return false }
         return [.paid, .sent, .waitingForPickup].contains(listing.status)
+    }
+
+    private var sellerOwnListingBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "storefront")
+                .foregroundColor(.accentColor)
+                .font(.subheadline.weight(.semibold))
+
+            Text("This is your listing")
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
     }
 
     private var confirmReceiptButton: some View {
