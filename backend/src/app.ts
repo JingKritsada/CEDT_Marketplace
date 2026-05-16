@@ -17,6 +17,7 @@ import { setupSwagger } from "./config/swagger.js";
 import { errorHandler } from "./middlewares/error-handler.js";
 import { notFoundHandler } from "./middlewares/not-found.js";
 import { httpLogger } from "./middlewares/logger.js";
+import { ok } from "./utils/api-response.js";
 
 export const app = express();
 
@@ -38,9 +39,7 @@ app.use(express.static(path.join(process.cwd(), "public")));
 app.use(httpLogger);
 
 app.get("/health", (_req, res) => {
-	res.status(200).json({
-		status: "ok",
-	});
+	res.status(200).json(ok({ status: "ok" }));
 });
 
 app.use(apiRouter);

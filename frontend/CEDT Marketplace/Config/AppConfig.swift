@@ -2,7 +2,7 @@ import Foundation
 
 enum AppConfig {
     static let baseURL: URL = {
-        guard let url = URL(string: "http://172.20.10.3:3003") else {
+        guard let url = URL(string: "http://localhost:3003") else {
             preconditionFailure("Invalid base URL in AppConfig.")
         }
         return url

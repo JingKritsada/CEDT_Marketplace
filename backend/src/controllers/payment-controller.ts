@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { asyncHandler } from "@/utils/async-handler.js";
+import { ok } from "@/utils/api-response.js";
 import { paymentService } from "@/services/payment-service.js";
 
 const getParam = (id: string | string[]): string => (Array.isArray(id) ? id[0] : id);
@@ -8,25 +9,25 @@ const getParam = (id: string | string[]): string => (Array.isArray(id) ? id[0] :
 export const createCheckout = asyncHandler(async (req: Request, res: Response) => {
 	const result = await paymentService.checkout(req.auth!.userId, req.body.listingId);
 
-	res.status(201).json(result);
+	res.status(201).json(ok(result));
 });
 
 export const getPayment = asyncHandler(async (req: Request, res: Response) => {
 	const payment = await paymentService.getById(getParam(req.params.id), req.auth!.userId);
 
-	res.status(200).json(payment);
+	res.status(200).json(ok(payment));
 });
 
 export const listMyPayments = asyncHandler(async (req: Request, res: Response) => {
 	const payments = await paymentService.listForUser(req.auth!.userId);
 
-	res.status(200).json(payments);
+	res.status(200).json(ok(payments));
 });
 
 export const cancelPayment = asyncHandler(async (req: Request, res: Response) => {
 	const payment = await paymentService.cancel(getParam(req.params.id), req.auth!.userId);
 
-	res.status(200).json(payment);
+	res.status(200).json(ok(payment));
 });
 
 export const refundPayment = asyncHandler(async (req: Request, res: Response) => {
@@ -37,7 +38,7 @@ export const refundPayment = asyncHandler(async (req: Request, res: Response) =>
 		req.body?.reason
 	);
 
-	res.status(202).json(payment);
+	res.status(202).json(ok(payment));
 });
 
 export const confirmListingReceiptAndCapture = asyncHandler(async (req: Request, res: Response) => {
@@ -46,5 +47,5 @@ export const confirmListingReceiptAndCapture = asyncHandler(async (req: Request,
 		req.auth!.userId
 	);
 
-	res.status(200).json(result);
+	res.status(200).json(ok(result));
 });

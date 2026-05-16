@@ -11,7 +11,6 @@ struct SoldItemsView: View {
             emptyIcon: "checkmark.seal"
         )
         .navigationTitle("Sold Items")
-        .task { await viewModel.loadProfile() }
         .refreshable { await viewModel.loadProfile() }
     }
 }

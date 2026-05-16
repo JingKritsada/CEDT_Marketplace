@@ -69,6 +69,7 @@ final class ImageUploadService {
         request.setValue(
             "multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type"
         )
+        request.setValue("close", forHTTPHeaderField: "Connection")
 
         guard let accessToken else {
             throw NetworkError.unauthorized
@@ -103,7 +104,16 @@ final class ImageUploadService {
             }
 
             do {
-                return try decoder.decode(UploadResponse.self, from: data).urls
+                let envelope = try decoder.decode(APIEnvelope<UploadResponse>.self, from: data)
+                guard envelope.success, let payload = envelope.data else {
+                    if let error = envelope.error {
+                        throw NetworkError.serverError(error.message, code: error.code)
+                    }
+                    throw NetworkError.decodingFailed
+                }
+                return payload.urls
+            } catch let error as NetworkError {
+                throw error
             } catch {
                 throw NetworkError.decodingFailed
             }
@@ -114,20 +124,17 @@ final class ImageUploadService {
         case 404:
             throw NetworkError.notFound
         case 422:
-            let message = decodeErrorMessage(from: data) ?? "Invalid input."
-            throw NetworkError.validationError(message)
+            let body = decodeErrorBody(from: data)
+            throw NetworkError.validationError(body?.message ?? "Invalid input.")
         default:
-            let message = decodeErrorMessage(from: data) ?? "Server error."
-            throw NetworkError.serverError(message)
+            let body = decodeErrorBody(from: data)
+            throw NetworkError.serverError(body?.message ?? "Server error.", code: body?.code)
         }
     }
 
-    private func decodeErrorMessage(from data: Data) -> String? {
-        struct ErrorResponse: Decodable {
-            let message: String?
-        }
-
-        return try? decoder.decode(ErrorResponse.self, from: data).message
+    private func decodeErrorBody(from data: Data) -> APIErrorBody? {
+        struct Wrapper: Decodable { let error: APIErrorBody? }
+        return (try? decoder.decode(Wrapper.self, from: data))?.error
     }
 }
 

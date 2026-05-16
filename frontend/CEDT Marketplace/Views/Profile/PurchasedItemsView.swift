@@ -11,7 +11,6 @@ struct PurchasedItemsView: View {
             emptyIcon: "bag"
         )
         .navigationTitle("Purchased Items")
-        .task { await viewModel.loadProfile() }
         .refreshable { await viewModel.loadProfile() }
     }
 }

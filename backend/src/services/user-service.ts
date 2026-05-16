@@ -57,22 +57,14 @@ export const userService = {
 	},
 
 	async updateProfile(id: string, payload: UpdateUserProfileInput) {
-		const user = await prisma.user.update({
+		await prisma.user.update({
 			where: { id },
 			data: payload,
-			select: {
-				id: true,
-				email: true,
-				displayName: true,
-				studentId: true,
-				avatarUrl: true,
-				lineId: true,
-				instagram: true,
-				facebookUrl: true,
-				createdAt: true,
-			},
+			select: { id: true },
 		});
 
-		return user;
+		// Return the same shape as getById so the frontend's UserProfile decoder is
+		// happy — it expects `listings` and `rating` on every /users/me response.
+		return this.getById(id);
 	},
 };

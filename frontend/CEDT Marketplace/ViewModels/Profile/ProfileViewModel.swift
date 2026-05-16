@@ -25,6 +25,8 @@ final class ProfileViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             profile = try await userService.getMe()
+        } catch is CancellationError {
+            return
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {
@@ -37,6 +39,8 @@ final class ProfileViewModel: ObservableObject {
     func loadSellerProfile() async {
         do {
             sellerProfile = try await sellerService.myProfile()
+        } catch is CancellationError {
+            return
         } catch {
             // Not all users have a seller profile yet — silently treat as "not registered".
             sellerProfile = nil
@@ -46,6 +50,8 @@ final class ProfileViewModel: ObservableObject {
     func refreshSellerStatus() async {
         do {
             sellerProfile = try await sellerService.refreshStatus()
+        } catch is CancellationError {
+            return
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {
@@ -63,6 +69,8 @@ final class ProfileViewModel: ObservableObject {
             } else {
                 errorMessage = "Onboarding link is invalid."
             }
+        } catch is CancellationError {
+            return
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {
@@ -84,6 +92,8 @@ final class ProfileViewModel: ObservableObject {
                 lineId: nil, instagram: nil, facebookUrl: nil
             )
             profile = try await userService.updateProfile(payload)
+        } catch is CancellationError {
+            return
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {
@@ -100,6 +110,8 @@ final class ProfileViewModel: ObservableObject {
                 facebookUrl: facebookUrl
             )
             profile = try await userService.updateProfile(payload)
+        } catch is CancellationError {
+            return
         } catch let error as NetworkError {
             errorMessage = error.userMessage
         } catch {

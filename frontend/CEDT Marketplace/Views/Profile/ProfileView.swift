@@ -36,7 +36,6 @@ struct ProfileView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                    .padding(.top, 8)
 
                     if let profile = viewModel.profile {
                         heroCard(profile)
@@ -159,21 +158,21 @@ struct ProfileView: View {
                     tint: .yellow
                 )
 
-				Button {
-					editDisplayName = profile.displayName
-					pendingAvatarData = nil
-					pendingAvatarImage = nil
-					isEditingProfile = true
-				} label: {
-					Label("Edit", systemImage: "pencil")
-						.font(.subheadline.weight(.semibold))
-						.foregroundColor(.accentPrimary)
-						.padding(.horizontal, 20)
-						.padding(.vertical, 8)
-						.background(Color.accentPrimary.opacity(0.1))
-						.clipShape(Capsule())
-				}
-				.buttonStyle(.plain)
+                Button {
+                    editDisplayName = profile.displayName
+                    pendingAvatarData = nil
+                    pendingAvatarImage = nil
+                    isEditingProfile = true
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.accentPrimary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(Color.accentPrimary.opacity(0.1))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
         }
     }

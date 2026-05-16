@@ -22,6 +22,7 @@ final class TokenInterceptor {
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("close", forHTTPHeaderField: "Connection")
 
         let body = RefreshTokenRequest(refreshToken: refreshToken)
         request.httpBody = try JSONEncoder().encode(body)
@@ -35,7 +36,10 @@ final class TokenInterceptor {
             throw NetworkError.unauthorized
         }
 
-        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        let envelope = try JSONDecoder().decode(APIEnvelope<TokenResponse>.self, from: data)
+        guard envelope.success, let tokenResponse = envelope.data else {
+            throw NetworkError.unauthorized
+        }
         KeychainManager.shared.accessToken = tokenResponse.accessToken
         KeychainManager.shared.refreshToken = tokenResponse.refreshToken
         return tokenResponse.accessToken

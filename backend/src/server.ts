@@ -30,6 +30,11 @@ function log(label: string, value: string, labelColor = CYAN) {
 
 const server = createServer(app);
 
+// Keep sockets alive long enough that iOS URLSession's pooled connections
+// don't go stale between user actions. headersTimeout must be > keepAliveTimeout.
+server.keepAliveTimeout = 65_000;
+server.headersTimeout = 66_000;
+
 server.listen(env.PORT, () => {
 	const divider = `${DIM}${"─".repeat(48)}${RESET}`;
 

@@ -11,7 +11,6 @@ struct ConfirmedItemsView: View {
             emptyIcon: "shippingbox"
         )
         .navigationTitle("Confirmed Items")
-        .task { await viewModel.loadProfile() }
         .refreshable { await viewModel.loadProfile() }
     }
 }

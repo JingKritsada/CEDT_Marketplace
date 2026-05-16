@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { asyncHandler } from "@/utils/async-handler.js";
+import { ok } from "@/utils/api-response.js";
 import { listingService } from "@/services/listing-service.js";
 import { paymentService } from "@/services/payment-service.js";
 
@@ -11,25 +12,25 @@ const getListingId = (id: string | string[]): string => {
 export const getListings = asyncHandler(async (req: Request, res: Response) => {
 	const listings = await listingService.getAll(req.query);
 
-	res.status(200).json(listings);
+	res.status(200).json(ok(listings));
 });
 
 export const searchListings = asyncHandler(async (req: Request, res: Response) => {
 	const listings = await listingService.search(req.query);
 
-	res.status(200).json(listings);
+	res.status(200).json(ok(listings));
 });
 
 export const getListingById = asyncHandler(async (req: Request, res: Response) => {
 	const listing = await listingService.getById(getListingId(req.params.id));
 
-	res.status(200).json(listing);
+	res.status(200).json(ok(listing));
 });
 
 export const createListing = asyncHandler(async (req: Request, res: Response) => {
 	const listing = await listingService.create(req.auth!.userId, req.body);
 
-	res.status(201).json(listing);
+	res.status(201).json(ok(listing));
 });
 
 export const updateListing = asyncHandler(async (req: Request, res: Response) => {
@@ -39,7 +40,7 @@ export const updateListing = asyncHandler(async (req: Request, res: Response) =>
 		req.body
 	);
 
-	res.status(200).json(listing);
+	res.status(200).json(ok(listing));
 });
 
 export const deleteListing = asyncHandler(async (req: Request, res: Response) => {
@@ -61,12 +62,12 @@ export const confirmListingReceived = asyncHandler(async (req: Request, res: Res
 
 		// Unwrap to match the free-listing branch's response shape (Listing) — the
 		// iOS client always decodes this endpoint as a Listing.
-		res.status(200).json(result.listing);
+		res.status(200).json(ok(result.listing));
 
 		return;
 	}
 
 	const updated = await listingService.confirmReceived(listingId, userId);
 
-	res.status(200).json(updated);
+	res.status(200).json(ok(updated));
 });

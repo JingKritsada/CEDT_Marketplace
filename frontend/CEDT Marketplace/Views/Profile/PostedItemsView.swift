@@ -11,7 +11,6 @@ struct PostedItemsView: View {
             emptyIcon: "tag"
         )
         .navigationTitle("Posted Items")
-        .task { await viewModel.loadProfile() }
         .refreshable { await viewModel.loadProfile() }
     }
 }

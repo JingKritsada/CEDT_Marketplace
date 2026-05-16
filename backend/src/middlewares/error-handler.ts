@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 
 import { ApiError } from "@/utils/api-error.js";
+import { fail } from "@/utils/api-response.js";
 
 export const errorHandler = (
 	err: unknown,
@@ -12,19 +13,17 @@ export const errorHandler = (
 	_next: NextFunction
 ): void => {
 	if (err instanceof ApiError) {
-		res.status(err.statusCode).json({
-			message: err.message,
-			details: err.details,
-		});
+		res.status(err.statusCode).json(fail(err.code, err.message, err.details));
 
 		return;
 	}
 
 	if (err instanceof ZodError || (err as any)?.name === "ZodError") {
-		res.status(400).json({
-			message: "Validation failed",
-			details: (err as any).issues || (err as any).errors,
-		});
+		res
+			.status(400)
+			.json(
+				fail("VALIDATION_FAILED", "Validation failed", (err as any).issues || (err as any).errors)
+			);
 
 		return;
 	}
@@ -32,18 +31,14 @@ export const errorHandler = (
 	if (err instanceof Prisma.PrismaClientKnownRequestError) {
 		const details = process.env.NODE_ENV === "production" ? undefined : err.message;
 
-		res.status(400).json({
-			message: "Database request failed",
-			details,
-		});
+		res.status(400).json(fail("DATABASE_ERROR", "Database request failed", details));
 
 		return;
 	}
 
 	console.error("[error-handler] unhandled error", err);
 
-	res.status(500).json({
-		message: "Internal server error",
-		details: process.env.NODE_ENV === "production" ? undefined : (err as Error)?.message,
-	});
+	const details = process.env.NODE_ENV === "production" ? undefined : (err as Error)?.message;
+
+	res.status(500).json(fail("INTERNAL_ERROR", "Internal server error", details));
 };
