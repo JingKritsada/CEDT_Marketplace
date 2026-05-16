@@ -22,6 +22,7 @@ struct ListingDetailView: View {
     @State private var showShare = false
     @State private var shareItems: [Any] = []
     @State private var showConfirmReceiptAlert = false
+    @State private var showRatingSheet = false
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -518,6 +519,10 @@ struct ListingDetailView: View {
         Group {
             if shouldShowConfirmReceipt {
                 confirmReceiptButton
+            } else if shouldShowRateSeller {
+                rateSellerButton
+            } else if shouldShowRatedBadge {
+                ratedBadge
             } else if isCurrentUserSeller {
                 sellerOwnListingBar
             } else {
@@ -531,6 +536,23 @@ struct ListingDetailView: View {
         .padding(.top, 12)
         .padding(.bottom, 16)
         .background(Color(.systemBackground))
+        .sheet(isPresented: $showRatingSheet) {
+            RatingSheet(sellerName: viewModel.listing?.seller?.displayName) { rating, comment in
+                let success = await viewModel.submitReview(rating: rating, comment: comment)
+                if success {
+                    LocalNotifier.success(
+                        "Thanks for sharing your feedback.",
+                        title: "Review submitted"
+                    )
+                } else {
+                    LocalNotifier.error(
+                        viewModel.errorMessage ?? "Couldn't submit your review.",
+                        title: "Review failed"
+                    )
+                }
+                return success
+            }
+        }
         .alert("Confirm receipt?", isPresented: $showConfirmReceiptAlert) {
             Button("Confirm", role: .none) {
                 Task {
@@ -565,6 +587,20 @@ struct ListingDetailView: View {
         return [.paid, .sent, .waitingForPickup].contains(listing.status)
     }
 
+    /// Buyer can leave a review only once the listing is `.received`.
+    /// After review submission, the backend transitions the listing to `.rated`.
+    private var shouldShowRateSeller: Bool {
+        guard let listing = viewModel.listing, let currentUserId else { return false }
+        guard listing.buyerId == currentUserId else { return false }
+        return listing.status == .received
+    }
+
+    private var shouldShowRatedBadge: Bool {
+        guard let listing = viewModel.listing, let currentUserId else { return false }
+        guard listing.buyerId == currentUserId else { return false }
+        return listing.status == .rated
+    }
+
     private var sellerOwnListingBar: some View {
         HStack(spacing: 10) {
             Image(systemName: "storefront")
@@ -585,6 +621,28 @@ struct ListingDetailView: View {
             action: { showConfirmReceiptAlert = true },
             isLoading: viewModel.isLoading
         )
+    }
+
+    private var rateSellerButton: some View {
+        PrimaryButton(
+            title: "Rate Seller",
+            action: { showRatingSheet = true },
+            isLoading: viewModel.isLoading
+        )
+    }
+
+    private var ratedBadge: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundColor(.green)
+                .font(.subheadline.weight(.semibold))
+
+            Text("You rated this seller")
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
     }
 
     private var addToWishlistButton: some View {

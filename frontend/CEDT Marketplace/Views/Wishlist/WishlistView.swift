@@ -9,6 +9,7 @@ struct WishlistView: View {
 
     @State private var showClearAlert = false
     @State private var showFilters = false
+    @State private var activeQuery: ListingQuery?
     @State private var pendingCheckout: Listing?
     @State private var searchText = ""
     @State private var selectedCategoryId: String? = nil
@@ -106,6 +107,9 @@ struct WishlistView: View {
             .navigationDestination(item: $pendingCheckout) { listing in
                 CheckoutView(directListing: listing)
             }
+            .sheet(isPresented: $showFilters) {
+                FilterModalView(activeQuery: $activeQuery)
+            }
             .alert("Clear wishlist?", isPresented: $showClearAlert) {
                 Button("Clear", role: .destructive) {
                     Task { await viewModel.clear() }
@@ -126,14 +130,26 @@ struct WishlistView: View {
 
     private func filteredItems(from wishlist: Wishlist) -> [WishlistItem] {
         wishlist.items.filter { item in
-            // Match the home page: hide items that are no longer available.
-            guard item.listing.status == .available else { return false }
+            let listing = item.listing
+            guard listing.status == .available else { return false }
+
             let matchesCategory =
-                selectedCategoryId == nil || item.listing.category?.id == selectedCategoryId
+                selectedCategoryId == nil || listing.category?.id == selectedCategoryId
             let matchesSearch =
                 searchText.isEmpty
-                    || item.listing.title.localizedCaseInsensitiveContains(searchText)
-                    || item.listing.description.localizedCaseInsensitiveContains(searchText)
+                    || listing.title.localizedCaseInsensitiveContains(searchText)
+                    || listing.description.localizedCaseInsensitiveContains(searchText)
+
+            // Apply FilterModalView query when set
+            if let q = activeQuery {
+                if let isFree = q.isFree, isFree != listing.isFree { return false }
+                if let minPrice = q.minPrice, listing.price < minPrice { return false }
+                if let maxPrice = q.maxPrice, listing.price > maxPrice { return false }
+                if let courseCode = q.courseCode, !courseCode.isEmpty,
+                   !(listing.courseCode ?? "").localizedCaseInsensitiveContains(courseCode)
+                { return false }
+            }
+
             return matchesCategory && matchesSearch
         }
     }

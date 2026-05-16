@@ -13,15 +13,41 @@ final class ListingDetailViewModel: ObservableObject {
     private let listingService: ListingService
     private let wishlistService: WishlistService
     private let userService: UserService
+    private let reviewService: ReviewService
 
     init(
         listingService: ListingService? = nil,
         wishlistService: WishlistService? = nil,
-        userService: UserService? = nil
+        userService: UserService? = nil,
+        reviewService: ReviewService? = nil
     ) {
         self.listingService = listingService ?? ListingService()
         self.wishlistService = wishlistService ?? WishlistService()
         self.userService = userService ?? UserService()
+        self.reviewService = reviewService ?? ReviewService()
+    }
+
+    /// Submits a 1–5 star review with optional comment. After success the listing
+    /// transitions to `.rated` server-side, so we reload to refresh the UI state.
+    func submitReview(rating: Int, comment: String?) async -> Bool {
+        guard let listing else { return false }
+        do {
+            _ = try await reviewService.createReview(
+                CreateReviewRequest(
+                    listingId: listing.id,
+                    rating: rating,
+                    comment: comment?.isEmpty == true ? nil : comment
+                )
+            )
+            await loadListing(id: listing.id)
+            return true
+        } catch let error as NetworkError {
+            errorMessage = error.userMessage
+            return false
+        } catch {
+            errorMessage = NetworkError.unknown.userMessage
+            return false
+        }
     }
 
     func loadListing(id: String) async {

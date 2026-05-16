@@ -150,10 +150,10 @@ final class ProfileViewModel: ObservableObject {
     }
 
     var soldListings: [Listing] {
-        profile?.listings.filter { $0.status == .received || $0.status == .rated } ?? []
+        profile?.listings.filter { $0.sellerId == profile?.id && ( $0.status == .received || $0.status == .sent || $0.status == .rated ) } ?? []
     }
 
     var confirmedListings: [Listing] {
-        profile?.listings.filter { $0.status == .waitingForPickup || $0.status == .paid } ?? []
+        profile?.listings.filter { $0.sellerId == profile?.id && ( $0.status == .waitingForPickup || $0.status == .paid ) } ?? []
     }
 }
