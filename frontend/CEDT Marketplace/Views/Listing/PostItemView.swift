@@ -5,12 +5,19 @@ import UIKit
 import UserNotifications
 
 struct PostItemView: View {
+    /// When non-nil, the view opens in edit mode, pre-filling the form from this listing.
+    let editingListing: Listing?
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = PostItemViewModel()
 
     @State private var showConfirmAlert = false
 
     private let cardCornerRadius: CGFloat = 24
+
+    init(editingListing: Listing? = nil) {
+        self.editingListing = editingListing
+    }
 
     var body: some View {
         NavigationStack {
@@ -92,7 +99,12 @@ struct PostItemView: View {
                                 options: ListingCondition.allCases.map { ($0.rawValue, $0.displayName) }
                             )
 
-                            stackedField(label: "Course code", placeholder: "2110101", text: $viewModel.courseCode)
+                            stackedField(
+                                label: "Course code",
+                                placeholder: "2110101",
+                                text: $viewModel.courseCode,
+                                keyboardType: .numberPad
+                            )
                         }
 
                         if let errorMessage = viewModel.errorMessage {
@@ -107,7 +119,7 @@ struct PostItemView: View {
                         }
 
                         PrimaryButton(
-                            title: "Post Item",
+                            title: viewModel.isEditing ? "Save Changes" : "Post Item",
                             action: {
                                 if viewModel.validate() {
                                     showConfirmAlert = true
@@ -124,13 +136,27 @@ struct PostItemView: View {
                 .padding(.bottom, 32)
             }
             .background(Color(.systemGray6))
-            .toolbar(.hidden, for: .navigationBar)
+            .toolbar(viewModel.isEditing ? .visible : .hidden, for: .navigationBar)
+            .navigationTitle(viewModel.isEditing ? "Edit listing" : "")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if viewModel.isEditing {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") { dismiss() }
+                    }
+                }
+            }
             .refreshable {
-                viewModel.resetForm()
+                if !viewModel.isEditing {
+                    viewModel.resetForm()
+                }
                 await viewModel.loadSellerStatus()
                 await viewModel.loadOptions()
             }
             .task {
+                if let listing = editingListing, !viewModel.isEditing {
+                    viewModel.setupForEdit(listing: listing)
+                }
                 await viewModel.loadSellerStatus()
                 await viewModel.loadOptions()
             }
@@ -139,27 +165,38 @@ struct PostItemView: View {
                     viewModel.price = "0"
                 }
             }
-            .alert("Post this item?", isPresented: $showConfirmAlert) {
-                Button("Post", role: .none) {
+            .alert(
+                viewModel.isEditing ? "Save changes?" : "Post this item?",
+                isPresented: $showConfirmAlert
+            ) {
+                Button(viewModel.isEditing ? "Save" : "Post", role: .none) {
                     Task {
+                        let wasEditing = viewModel.isEditing
                         if await viewModel.submitListing() != nil {
                             LocalNotifier.success(
-                                "Your listing is now live on the marketplace.", title: "Item posted"
+                                wasEditing
+                                    ? "Your listing has been updated."
+                                    : "Your listing is now live on the marketplace.",
+                                title: wasEditing ? "Changes saved" : "Item posted"
                             )
-                            viewModel.resetForm()
+                            if !wasEditing { viewModel.resetForm() }
                             try? await Task.sleep(for: .seconds(0.5))
                             dismiss()
                         } else {
                             LocalNotifier.error(
                                 viewModel.errorMessage ?? "Something went wrong. Please try again.",
-                                title: "Posting failed"
+                                title: wasEditing ? "Update failed" : "Posting failed"
                             )
                         }
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Your listing will be visible to others on the marketplace.")
+                Text(
+                    viewModel.isEditing
+                        ? "Your changes will be visible to others on the marketplace."
+                        : "Your listing will be visible to others on the marketplace."
+                )
             }
         }
         .background(Color(.systemGray6))
@@ -207,12 +244,16 @@ struct PostItemView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("List something useful.")
+            Text(viewModel.isEditing ? "Edit your listing." : "List something useful.")
                 .font(.largeTitle.bold())
                 .foregroundColor(.primary)
-            Text("Add photos, fill in the blank, and publish it.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            Text(
+                viewModel.isEditing
+                    ? "Update the details and save your changes."
+                    : "Add photos, fill in the blank, and publish it."
+            )
+            .font(.subheadline)
+            .foregroundColor(.secondary)
         }
         .padding(.bottom, 2)
     }

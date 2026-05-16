@@ -202,3 +202,9 @@ struct SellerDashboardCard: View {
         .padding(.top, 2)
     }
 }
+
+#Preview {
+    SellerDashboardCard(viewModel: ProfileViewModel())
+        .padding()
+        .background(Color(.systemGray6))
+}

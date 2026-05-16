@@ -34,4 +34,8 @@ final class ListingService {
     func confirmReceived(id: String) async throws -> Listing {
         try await client.request(.confirmReceived(id: id))
     }
+
+    func claimFree(id: String) async throws -> Listing {
+        try await client.request(.claimFreeListing(id: id))
+    }
 }

@@ -49,6 +49,12 @@ export const deleteListing = asyncHandler(async (req: Request, res: Response) =>
 	res.status(204).send();
 });
 
+export const claimFreeListing = asyncHandler(async (req: Request, res: Response) => {
+	const updated = await listingService.claimFree(getListingId(req.params.id), req.auth!.userId);
+
+	res.status(200).json(ok(updated));
+});
+
 export const confirmListingReceived = asyncHandler(async (req: Request, res: Response) => {
 	const listingId = getListingId(req.params.id);
 	const userId = req.auth!.userId;

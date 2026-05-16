@@ -126,6 +126,8 @@ struct WishlistView: View {
 
     private func filteredItems(from wishlist: Wishlist) -> [WishlistItem] {
         wishlist.items.filter { item in
+            // Match the home page: hide items that are no longer available.
+            guard item.listing.status == .available else { return false }
             let matchesCategory =
                 selectedCategoryId == nil || item.listing.category?.id == selectedCategoryId
             let matchesSearch =

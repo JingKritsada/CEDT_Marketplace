@@ -23,9 +23,11 @@ final class CheckoutViewModel: ObservableObject {
     @Published var paymentOutcome: PaymentOutcome?
 
     private let paymentService: PaymentService
+    private let listingService: ListingService
 
-    init(paymentService: PaymentService? = nil) {
+    init(paymentService: PaymentService? = nil, listingService: ListingService? = nil) {
         self.paymentService = paymentService ?? PaymentService()
+        self.listingService = listingService ?? ListingService()
     }
 
     func configure(with listing: Listing) {
@@ -51,13 +53,25 @@ final class CheckoutViewModel: ObservableObject {
             return
         }
 
-        if listing.isFree || listing.price <= 0 {
-            errorMessage = "Free items don't need checkout."
-            return
-        }
-
         isLoading = true
         defer { isLoading = false }
+
+        if listing.isFree || listing.price <= 0 {
+            // Free items skip Stripe — claim directly on the backend.
+            do {
+                let updated = try await listingService.claimFree(id: listing.id)
+                self.listing = updated
+                paymentOutcome = .succeeded
+            } catch let error as NetworkError {
+                errorMessage = error.userMessage
+                paymentOutcome = .failed(error.userMessage)
+            } catch {
+                let msg = NetworkError.unknown.userMessage
+                errorMessage = msg
+                paymentOutcome = .failed(msg)
+            }
+            return
+        }
 
         do {
             let response = try await paymentService.checkout(listingId: listing.id)

@@ -104,3 +104,13 @@ struct ListingImagePickerView: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
+
+#Preview {
+    ListingImagePickerView(
+        previews: [],
+        onAdd: { _ in },
+        onRemove: { _ in }
+    )
+    .padding()
+    .background(Color(.systemGray6))
+}

@@ -21,8 +21,16 @@ final class PostItemViewModel: ObservableObject {
     @Published var sellerProfile: SellerProfile?
     @Published var isLoadingSeller = false
 
+    /// Non-nil when editing an existing listing; the form switches into edit mode.
+    @Published private(set) var editingListingId: String?
+
+    var isEditing: Bool {
+        editingListingId != nil
+    }
+
     var isSellerActive: Bool {
-        sellerProfile?.canAcceptPayments == true
+        // Skip the seller gate when editing — sellers already verified at create time.
+        isEditing || sellerProfile?.canAcceptPayments == true
     }
 
     private let listingService: ListingService
@@ -30,7 +38,12 @@ final class PostItemViewModel: ObservableObject {
     private let categoryService: CategoryService
     private let pickupLocationService: PickupLocationService
     private let sellerService: SellerOnboardingService
+
+    /// New images selected this session, parallel to the trailing portion of `imagePreviews`.
     private var imageData: [Data] = []
+    /// URLs of images that already exist on the server (only populated in edit mode).
+    /// These occupy the leading portion of `imagePreviews`.
+    private var existingImageUrls: [String] = []
     private var cancellables = Set<AnyCancellable>()
 
     init(
@@ -68,9 +81,53 @@ final class PostItemViewModel: ObservableObject {
     }
 
     func removeImage(at index: Int) {
-        guard imageData.indices.contains(index), imagePreviews.indices.contains(index) else { return }
-        imageData.remove(at: index)
+        guard imagePreviews.indices.contains(index) else { return }
         imagePreviews.remove(at: index)
+        // Existing URLs occupy [0..<existingImageUrls.count]; new data occupies the rest.
+        if index < existingImageUrls.count {
+            existingImageUrls.remove(at: index)
+        } else {
+            let dataIndex = index - existingImageUrls.count
+            if imageData.indices.contains(dataIndex) {
+                imageData.remove(at: dataIndex)
+            }
+        }
+    }
+
+    /// Switch the form into edit mode, pre-filling all fields from the existing listing.
+    /// Existing image URLs are kept and shown as preview placeholders; on submit they're
+    /// preserved alongside any newly added images.
+    func setupForEdit(listing: Listing) {
+        editingListingId = listing.id
+        title = listing.title
+        description = listing.description
+        isFree = listing.isFree
+        price = listing.isFree ? "0" : String(listing.price)
+        courseCode = listing.courseCode ?? ""
+        selectedCategoryId = listing.categoryId ?? listing.category?.id
+        selectedPickupLocationId = listing.pickupLocationId ?? listing.pickupLocation?.id
+        condition = listing.condition ?? .good
+        existingImageUrls = listing.images
+        imageData = []
+        imagePreviews = []
+
+        // Load existing images asynchronously so the picker can show them.
+        Task { [weak self, urls = listing.images] in
+            for url in urls {
+                guard let image = await Self.downloadImage(from: url) else { continue }
+                await MainActor.run { self?.imagePreviews.append(image) }
+            }
+        }
+    }
+
+    private static func downloadImage(from urlString: String) async -> UIImage? {
+        guard let url = URL(string: urlString) else { return nil }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            return UIImage(data: data)
+        } catch {
+            return nil
+        }
     }
 
     func loadSellerStatus() async {
@@ -117,7 +174,26 @@ final class PostItemViewModel: ObservableObject {
 
         do {
             let uploadedImageUrls = try await imageUploadService.uploadListingImages(imageData)
+            let allImageUrls = existingImageUrls + uploadedImageUrls
             let priceValue = isFree ? 0 : (Int(price) ?? 0)
+
+            if let editingId = editingListingId {
+                let payload = UpdateListingRequest(
+                    title: title,
+                    description: description,
+                    price: priceValue,
+                    isFree: isFree,
+                    courseCode: courseCode.isEmpty ? nil : courseCode,
+                    categoryId: selectedCategoryId,
+                    pickupLocationId: selectedPickupLocationId,
+                    images: allImageUrls,
+                    status: nil,
+                    buyerId: nil,
+                    condition: condition
+                )
+                return try await listingService.updateListing(id: editingId, payload: payload)
+            }
+
             let payload = CreateListingRequest(
                 title: title,
                 description: description,
@@ -126,7 +202,7 @@ final class PostItemViewModel: ObservableObject {
                 courseCode: courseCode.isEmpty ? nil : courseCode,
                 categoryId: selectedCategoryId ?? "",
                 pickupLocationId: selectedPickupLocationId ?? "",
-                images: uploadedImageUrls,
+                images: allImageUrls,
                 condition: condition
             )
             return try await listingService.createListing(payload)
@@ -150,6 +226,8 @@ final class PostItemViewModel: ObservableObject {
         condition = .good
         imagePreviews = []
         imageData = []
+        existingImageUrls = []
+        editingListingId = nil
         errorMessage = nil
     }
 

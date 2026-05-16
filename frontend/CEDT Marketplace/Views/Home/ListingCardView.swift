@@ -6,65 +6,59 @@ struct ListingCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack(alignment: .topLeading) {
-                if let imageUrl = listing.images.first, !imageUrl.isEmpty, URL(string: imageUrl) != nil {
-                    AsyncImage(url: URL(string: imageUrl)) { phase in
-                        switch phase {
-                        case .empty:
-                            Color(.systemBackground)
-								.opacity(0.5)
-                                .overlay(
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.secondary)
-                                        .scaleEffect(1.5)
-                                )
-                                .aspectRatio(1, contentMode: .fill)
+                // Rectangle anchors the square — unlike Color.clear it has intrinsic
+                // substance so aspectRatio(1) reliably establishes a W×W frame.
+                Rectangle()
+                    .foregroundColor(Color(.systemGray5))
+                    .aspectRatio(1, contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+                    .overlay {
+                        if let imageUrl = listing.images.first, !imageUrl.isEmpty,
+                           URL(string: imageUrl) != nil
+                        {
+                            AsyncImage(url: URL(string: imageUrl)) { phase in
+                                switch phase {
+                                case .empty:
+                                    Color(.systemGray5)
+                                        .overlay(
+                                            ProgressView().tint(.secondary).scaleEffect(1.5)
+                                        )
 
-                        case .failure:
-                            Color(.systemBackground)
-								.opacity(0.5)
-                                .aspectRatio(1, contentMode: .fill)
+                                case .failure:
+                                    Color(.systemGray5)
+                                        .overlay(
+                                            VStack(spacing: 8) {
+                                                Image(systemName: "link")
+                                                    .font(.system(size: 28))
+                                                    .foregroundColor(.secondary)
+                                                Text("Invalid URL")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        )
+
+                                case let .success(image):
+                                    image.resizable().scaledToFill()
+
+                                @unknown default:
+                                    Color(.systemGray5)
+                                }
+                            }
+                        } else {
+                            Color(.systemGray5)
                                 .overlay(
                                     VStack(spacing: 8) {
-                                        Image(systemName: "link")
+                                        Image(systemName: "photo")
                                             .font(.system(size: 28))
                                             .foregroundColor(.secondary)
-                                        Text("Invalid URL")
+                                        Text("No Image")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
                                 )
-
-                        case let .success(image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-
-                        @unknown default:
-                            Color(.systemBackground)
-								.opacity(0.5)
-                                .aspectRatio(1, contentMode: .fill)
                         }
                     }
-                    .frame(maxWidth: .infinity)
                     .clipped()
-                } else {
-                    Color(.systemBackground)
-						.opacity(0.5)
-                        .aspectRatio(1, contentMode: .fill)
-                        .frame(maxWidth: .infinity)
-                        .overlay(
-                            VStack(spacing: 8) {
-                                Image(systemName: "photo")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.secondary)
-                                Text("No Image")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        )
-                        .clipped()
-                }
 
                 Text((listing.category?.name ?? "No Category").uppercased())
                     .font(.system(size: 10, weight: .heavy))

@@ -8,7 +8,7 @@ struct ListingRowView: View {
     private let thumbnailSize: CGFloat = 92
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .center, spacing: 14) {
             thumbnail
 
             VStack(alignment: .leading, spacing: 6) {
@@ -50,6 +50,10 @@ struct ListingRowView: View {
                 }
             }
             .frame(maxWidth: .infinity, minHeight: thumbnailSize, alignment: .topLeading)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.secondary)
         }
         .padding(12)
         .background(Color(.systemBackground))

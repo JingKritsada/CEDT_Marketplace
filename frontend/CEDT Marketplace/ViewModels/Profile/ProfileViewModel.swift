@@ -14,10 +14,32 @@ final class ProfileViewModel: ObservableObject {
 
     private let userService: UserService
     private let sellerService: SellerOnboardingService
+    private let listingService: ListingService
 
-    init(userService: UserService? = nil, sellerService: SellerOnboardingService? = nil) {
+    init(
+        userService: UserService? = nil,
+        sellerService: SellerOnboardingService? = nil,
+        listingService: ListingService? = nil
+    ) {
         self.userService = userService ?? UserService()
         self.sellerService = sellerService ?? SellerOnboardingService()
+        self.listingService = listingService ?? ListingService()
+    }
+
+    /// Delete one of the current user's listings. The listing service rejects deletes
+    /// for listings the caller doesn't own, so we don't pre-check ownership here.
+    func deleteListing(id: String) async -> Bool {
+        do {
+            try await listingService.deleteListing(id: id)
+            await loadProfile()
+            return true
+        } catch let error as NetworkError {
+            errorMessage = error.userMessage
+            return false
+        } catch {
+            errorMessage = NetworkError.unknown.userMessage
+            return false
+        }
     }
 
     func loadProfile() async {
@@ -128,10 +150,10 @@ final class ProfileViewModel: ObservableObject {
     }
 
     var soldListings: [Listing] {
-        profile?.listings.filter { $0.status == .sold || $0.status == .rated } ?? []
+        profile?.listings.filter { $0.status == .received || $0.status == .rated } ?? []
     }
 
     var confirmedListings: [Listing] {
-        profile?.listings.filter { $0.status == .waitingForPickup || $0.status == .sent } ?? []
+        profile?.listings.filter { $0.status == .waitingForPickup || $0.status == .paid } ?? []
     }
 }

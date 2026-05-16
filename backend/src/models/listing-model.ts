@@ -122,7 +122,20 @@ export const createListingSchema = z.object({
 	images: z.array(z.string().url()).max(10).default([]),
 });
 
-export const updateListingSchema = createListingSchema.partial().extend({
+// Avoid `createListingSchema.partial()` here: `.partial()` keeps the `.default()` values from
+// the source schema, so undefined `status`/`condition` would still be coerced to AVAILABLE/GOOD
+// on every PATCH — destroying the existing status of a listing. Re-declare fields without defaults.
+export const updateListingSchema = z.object({
+	title: z.string().trim().min(1).max(140).optional(),
+	description: z.string().trim().min(1).optional(),
+	price: z.coerce.number().int().min(0).optional(),
+	isFree: z.coerce.boolean().optional(),
+	status: z.enum(ListingStatus).optional(),
+	condition: z.enum(ListingCondition).optional(),
+	categoryId: z.string().trim().min(1).optional(),
+	pickupLocationId: z.string().trim().min(1).optional(),
+	courseCode: z.string().trim().min(1).max(16).optional(),
+	images: z.array(z.string().url()).max(10).optional(),
 	buyerId: z.string().trim().min(1).optional(),
 });
 

@@ -313,6 +313,49 @@ export const listingService = {
 		});
 	},
 
+	async claimFree(id: string, userId: string) {
+		const listing = await prisma.listing.findUnique({
+			where: { id },
+			select: {
+				id: true,
+				sellerId: true,
+				status: true,
+				isFree: true,
+				price: true,
+			},
+		});
+
+		if (!listing) {
+			throw new ApiError("Listing not found", 404);
+		}
+
+		if (!listing.isFree && listing.price > 0) {
+			throw new ApiError("This listing is not free", 400);
+		}
+
+		if (listing.sellerId === userId) {
+			throw new ApiError("You cannot claim your own listing", 400);
+		}
+
+		if (listing.status !== ListingStatus.AVAILABLE) {
+			throw new ApiError("Listing is not available", 400);
+		}
+
+		return prisma.listing.update({
+			where: { id },
+			data: {
+				status: ListingStatus.WAITING_FOR_PICKUP,
+				buyerId: userId,
+			},
+			include: {
+				seller: { select: { id: true, displayName: true } },
+				buyer: { select: { id: true, displayName: true } },
+				category: true,
+				pickupLocation: true,
+			},
+		});
+	},
+
 	async confirmReceived(id: string, userId: string) {
 		const listing = await prisma.listing.findUnique({
 			where: { id },

@@ -52,9 +52,12 @@ struct CheckoutView: View {
             guard let outcome else { return }
             switch outcome {
             case .succeeded:
+                let isFree = (viewModel.listing ?? directListing).isFree
                 LocalNotifier.success(
-                    "Meet the seller at the pickup spot. Funds release once you tap Confirm Receipt.",
-                    title: "Order paid"
+                    isFree
+                        ? "Meet the seller at the pickup spot to collect your free item."
+                        : "Meet the seller at the pickup spot. Funds release once you tap Confirm Receipt.",
+                    title: isFree ? "Item claimed" : "Order paid"
                 )
                 viewModel.paymentOutcome = nil
                 dismiss()
@@ -274,5 +277,44 @@ struct CheckoutView: View {
         .padding(16)
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+    }
+}
+
+#Preview {
+    NavigationStack {
+        CheckoutView(
+            directListing: Listing(
+                id: "preview-listing",
+                sellerId: "seller-1",
+                buyerId: nil,
+                title: "Raspberry Pi 4 Model B",
+                description: "Used for one semester, great condition. Comes with power supply.",
+                price: 1200,
+                isFree: false,
+                status: .available,
+                condition: .good,
+                courseCode: "2110101",
+                categoryId: "cat-1",
+                pickupLocationId: "loc-1",
+                images: ["https://picsum.photos/400"],
+                createdAt: Date(),
+                updatedAt: Date(),
+                seller: UserSummary(
+                    id: "seller-1",
+                    displayName: "Nina Student",
+                    avatarUrl: nil,
+                    lineId: nil,
+                    instagram: nil,
+                    facebookUrl: nil
+                ),
+                buyer: nil,
+                category: Category(id: "cat-1", name: "Components", slug: "components"),
+                pickupLocation: PickupLocation(
+                    id: "loc-1", name: "Engineering Building Lobby",
+                    building: "Engineering 3", description: "Near the main entrance"
+                ),
+                reviews: nil
+            )
+        )
     }
 }

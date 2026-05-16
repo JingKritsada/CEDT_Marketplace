@@ -121,3 +121,24 @@ struct SearchFilterBar: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview {
+    @Previewable @State var search = ""
+    @Previewable @State var categoryId: String? = nil
+    let categories = [
+        Category(id: "1", name: "Electronics", slug: "electronics"),
+        Category(id: "2", name: "Books", slug: "books"),
+        Category(id: "3", name: "Components", slug: "components")
+    ]
+    SearchFilterBar(
+        placeholder: "Search components...",
+        searchText: $search,
+        selectedCategoryId: $categoryId,
+        categories: categories,
+        onFilterTap: {},
+        onTrailingAction: {},
+        trailingActionLabel: "Clear"
+    )
+    .padding()
+    .background(Color(.systemBackground))
+}

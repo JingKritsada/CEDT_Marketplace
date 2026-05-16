@@ -38,3 +38,12 @@ struct ToastView: View {
         .padding(.horizontal, 20)
     }
 }
+
+#Preview("Success") {
+    VStack(spacing: 16) {
+        ToastView(data: ToastData(message: "Item posted successfully!", style: .success))
+        ToastView(data: ToastData(message: "Something went wrong. Please try again.", style: .error))
+    }
+    .padding()
+    .background(Color(.systemGray6))
+}

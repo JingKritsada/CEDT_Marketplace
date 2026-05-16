@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+	claimFreeListing,
 	createListing,
 	deleteListing,
 	confirmListingReceived,
@@ -189,6 +190,36 @@ listingRouter.post(
 	requireAuth,
 	validate(listingIdSchema, "params"),
 	confirmListingReceived
+);
+
+/**
+ * @swagger
+ * /listings/{id}/claim-free:
+ *   post:
+ *     summary: Claim a free listing as the buyer (skips Stripe)
+ *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Listing claimed; status transitions to WAITING_FOR_PICKUP
+ *       400:
+ *         description: Listing is not free or not available
+ *       404:
+ *         description: Not found
+ */
+listingRouter.post(
+	"/:id/claim-free",
+	writeRateLimit,
+	requireAuth,
+	validate(listingIdSchema, "params"),
+	claimFreeListing
 );
 
 /**

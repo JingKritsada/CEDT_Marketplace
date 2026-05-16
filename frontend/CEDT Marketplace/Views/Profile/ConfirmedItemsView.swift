@@ -14,3 +14,9 @@ struct ConfirmedItemsView: View {
         .refreshable { await viewModel.loadProfile() }
     }
 }
+
+#Preview {
+    NavigationStack {
+        ConfirmedItemsView(viewModel: ProfileViewModel())
+    }
+}

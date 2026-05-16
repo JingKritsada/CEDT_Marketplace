@@ -9,6 +9,7 @@ enum Endpoint {
     case updateListing(id: String)
     case deleteListing(id: String)
     case confirmReceived(id: String)
+    case claimFreeListing(id: String)
     case uploadImages
     case search(query: ListingQuery?)
     case categories
@@ -44,6 +45,7 @@ enum Endpoint {
              .register,
              .createListing,
              .confirmReceived,
+             .claimFreeListing,
              .uploadImages,
              .addToWishlist,
              .createReview,
@@ -102,6 +104,8 @@ enum Endpoint {
             "/listings/\(id)"
         case let .confirmReceived(id):
             "/listings/\(id)/confirm-received"
+        case let .claimFreeListing(id):
+            "/listings/\(id)/claim-free"
         case .uploadImages:
             "/uploads/images"
         case .categories:
@@ -169,6 +173,7 @@ enum Endpoint {
              .updateListing,
              .deleteListing,
              .confirmReceived,
+             .claimFreeListing,
              .uploadImages,
              .me,
              .updateProfile,

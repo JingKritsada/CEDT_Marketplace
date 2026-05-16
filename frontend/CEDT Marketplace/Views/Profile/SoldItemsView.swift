@@ -14,3 +14,9 @@ struct SoldItemsView: View {
         .refreshable { await viewModel.loadProfile() }
     }
 }
+
+#Preview {
+    NavigationStack {
+        SoldItemsView(viewModel: ProfileViewModel())
+    }
+}
