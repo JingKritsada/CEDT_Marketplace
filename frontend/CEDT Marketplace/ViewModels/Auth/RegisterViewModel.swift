@@ -53,11 +53,7 @@ final class RegisterViewModel: ObservableObject {
             return false
         }
         guard !email.trimmingCharacters(in: .whitespaces).isEmpty else {
-            errorMessage = "University email is required."
-            return false
-        }
-        guard email.lowercased().hasSuffix("@\(AppConfig.studentEmailDomain)") else {
-            errorMessage = "Use university email (\(AppConfig.studentEmailDomain))."
+            errorMessage = "Email is required."
             return false
         }
         guard !password.isEmpty else {

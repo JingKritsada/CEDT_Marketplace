@@ -26,6 +26,7 @@ enum Endpoint {
     case createReview
     case refreshToken
     case logout
+    case appleLogin
 
     // Stripe / payments
     case checkout
@@ -51,6 +52,7 @@ enum Endpoint {
              .createReview,
              .refreshToken,
              .logout,
+             .appleLogin,
              .checkout,
              .cancelPayment,
              .refundPayment,
@@ -90,6 +92,8 @@ enum Endpoint {
             "/auth/refresh"
         case .logout:
             "/auth/logout"
+        case .appleLogin:
+            "/auth/social/apple"
         case .listings:
             "/listings"
         case .search:
@@ -161,6 +165,7 @@ enum Endpoint {
              .register,
              .refreshToken,
              .logout,
+             .appleLogin,
              .listings,
              .listingDetail,
              .search,

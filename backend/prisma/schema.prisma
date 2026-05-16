@@ -53,6 +53,13 @@ enum RefundStatus {
     FAILED
 }
 
+enum AuthProvider {
+    LOCAL
+    GOOGLE
+    FACEBOOK
+    APPLE
+}
+
 model User {
     id            String         @id @default(cuid())
     studentId     String?        @unique
@@ -62,12 +69,14 @@ model User {
     lineId        String?
     instagram     String?
     facebookUrl   String?
-    passwordHash  String
+    passwordHash  String?
+    studentVerified Boolean      @default(false)
     createdAt     DateTime       @default(now())
     updatedAt     DateTime       @updatedAt
     listings      Listing[]      @relation("SellerListings")
     buyerListings Listing[]      @relation("BuyerListings")
     refreshTokens RefreshToken[]
+    identities    UserIdentity[]
     reviewsWritten Review[]       @relation("ReviewerReviews")
     reviewsReceived Review[]      @relation("SellerReviews")
     wishlists        Wishlist[]
@@ -202,6 +211,19 @@ model StripeWebhookEvent {
     processedAt DateTime @default(now())
 
     @@index([type])
+}
+
+model UserIdentity {
+    id             String       @id @default(cuid())
+    userId         String
+    provider       AuthProvider
+    providerUserId String
+    email          String?
+    createdAt      DateTime     @default(now())
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([provider, providerUserId])
+    @@index([userId])
 }
 
 model RefreshToken {

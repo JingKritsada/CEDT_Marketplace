@@ -1,10 +1,19 @@
 import bcrypt from "bcryptjs";
+import type { AuthProvider } from "@prisma/client";
 
 import { env } from "@/config/env.js";
 import { prisma } from "@/config/prisma.js";
 import { ApiError } from "@/utils/api-error.js";
 import type { LoginInput, RegisterInput } from "@/models/auth-model.js";
 import { createAccessToken, createRefreshToken, verifyRefreshToken } from "@/utils/token.js";
+
+export interface SocialProfile {
+	provider: AuthProvider;
+	providerUserId: string;
+	email: string | null;
+	displayName: string;
+	avatarUrl?: string | null;
+}
 
 interface AuthResult {
 	accessToken: string;
@@ -43,10 +52,6 @@ const issueTokens = async (
 
 export const authService = {
 	async register(input: RegisterInput): Promise<AuthResult> {
-		if (!isStudentEmail(input.email)) {
-			throw new ApiError("Email must be a university student account", 400);
-		}
-
 		const existingUser = await prisma.user.findUnique({
 			where: { email: input.email },
 		});
@@ -63,6 +68,7 @@ export const authService = {
 				email: input.email,
 				displayName: input.displayName,
 				passwordHash,
+				studentVerified: isStudentEmail(input.email),
 			},
 		});
 
@@ -80,15 +86,11 @@ export const authService = {
 	},
 
 	async login(input: LoginInput): Promise<AuthResult> {
-		if (!isStudentEmail(input.email)) {
-			throw new ApiError("Email must be a university student account", 400);
-		}
-
 		const existingUser = await prisma.user.findUnique({
 			where: { email: input.email },
 		});
 
-		if (!existingUser) {
+		if (!existingUser || !existingUser.passwordHash) {
 			throw new ApiError("Invalid credentials", 401);
 		}
 
@@ -141,5 +143,53 @@ export const authService = {
 		await prisma.refreshToken.deleteMany({
 			where: { token },
 		});
+	},
+
+	async socialLogin(profile: SocialProfile): Promise<AuthResult> {
+		const { provider, providerUserId, email, displayName, avatarUrl } = profile;
+
+		const identity = await prisma.userIdentity.findUnique({
+			where: { provider_providerUserId: { provider, providerUserId } },
+			include: { user: true },
+		});
+
+		let user = identity?.user ?? null;
+
+		if (!user && email) {
+			user = await prisma.user.findUnique({ where: { email } });
+			if (user) {
+				await prisma.userIdentity.create({
+					data: { userId: user.id, provider, providerUserId, email },
+				});
+			}
+		}
+
+		if (!user) {
+			const fallbackEmail =
+				email ?? `${provider.toLowerCase()}_${providerUserId}@users.noreply.cedtmkt`;
+			user = await prisma.user.create({
+				data: {
+					email: fallbackEmail,
+					displayName,
+					avatarUrl: avatarUrl ?? null,
+					studentVerified: !!email && isStudentEmail(email),
+					identities: {
+						create: { provider, providerUserId, email },
+					},
+				},
+			});
+		}
+
+		const tokens = await issueTokens(user.id, user.email);
+
+		return {
+			...tokens,
+			user: {
+				id: user.id,
+				email: user.email,
+				displayName: user.displayName,
+				studentId: user.studentId,
+			},
+		};
 	},
 };

@@ -30,4 +30,9 @@ final class AuthService {
         let payload = RefreshTokenRequest(refreshToken: refreshToken)
         try await client.request(.logout, body: payload)
     }
+
+    func appleLogin(identityToken: String, fullName: AppleFullName?) async throws -> AuthResponse {
+        let payload = AppleLoginRequest(identityToken: identityToken, fullName: fullName)
+        return try await client.request(.appleLogin, body: payload)
+    }
 }

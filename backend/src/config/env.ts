@@ -19,6 +19,17 @@ const envSchema = z.object({
 	STRIPE_CONNECT_REFRESH_URL: z.string().default("cedtmkt://stripe/refresh"),
 	PLATFORM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(500),
 	PAYMENT_AUTH_EXPIRE_HOURS: z.coerce.number().int().min(1).default(144),
+	OAUTH_CALLBACK_BASE: z.string().url().default("http://localhost:3003"),
+	MOBILE_OAUTH_REDIRECT: z.string().default("cedtmkt://auth/callback"),
+	GOOGLE_CLIENT_ID: z.string().optional(),
+	GOOGLE_CLIENT_SECRET: z.string().optional(),
+	FACEBOOK_APP_ID: z.string().optional(),
+	FACEBOOK_APP_SECRET: z.string().optional(),
+	APPLE_SERVICES_ID: z.string().optional(),
+	APPLE_TEAM_ID: z.string().optional(),
+	APPLE_KEY_ID: z.string().optional(),
+	APPLE_PRIVATE_KEY: z.string().optional(),
+	APPLE_BUNDLE_ID: z.string().default("com.jing.CEDT-Marketplace"),
 });
 
 const parsedEnv = envSchema.parse(process.env);

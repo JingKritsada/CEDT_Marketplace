@@ -4,6 +4,13 @@ import { validate } from "@/middlewares/validate.js";
 import { authRateLimit } from "@/middlewares/rate-limit.js";
 import { login, refresh, register, logout } from "@/controllers/auth-controller.js";
 import {
+	appleNativeLogin,
+	facebookCallback,
+	facebookStart,
+	googleCallback,
+	googleStart,
+} from "@/controllers/oauth-controller.js";
+import {
 	loginSchema,
 	registerSchema,
 	logoutSchema,
@@ -87,3 +94,72 @@ authRouter.post("/refresh", authRateLimit, validate(refreshTokenSchema), refresh
  *         description: Logged out successfully
  */
 authRouter.post("/logout", authRateLimit, validate(logoutSchema), logout);
+
+/**
+ * @swagger
+ * /auth/oauth/google/start:
+ *   get:
+ *     summary: Begin Google OAuth flow (redirects to Google)
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to Google's authorization endpoint
+ */
+authRouter.get("/oauth/google/start", googleStart);
+
+/**
+ * @swagger
+ * /auth/oauth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback (redirects to mobile app with tokens)
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to mobile app deep link with tokens in URL fragment
+ */
+authRouter.get("/oauth/google/callback", googleCallback);
+
+/**
+ * @swagger
+ * /auth/oauth/facebook/start:
+ *   get:
+ *     summary: Begin Facebook OAuth flow (redirects to Facebook)
+ *     tags: [Auth]
+ */
+authRouter.get("/oauth/facebook/start", facebookStart);
+
+/**
+ * @swagger
+ * /auth/oauth/facebook/callback:
+ *   get:
+ *     summary: Facebook OAuth callback (redirects to mobile app with tokens)
+ *     tags: [Auth]
+ */
+authRouter.get("/oauth/facebook/callback", facebookCallback);
+
+/**
+ * @swagger
+ * /auth/social/apple:
+ *   post:
+ *     summary: Native Apple Sign-in (iOS posts Apple's identityToken)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [identityToken]
+ *             properties:
+ *               identityToken:
+ *                 type: string
+ *               fullName:
+ *                 type: object
+ *                 properties:
+ *                   givenName: { type: string }
+ *                   familyName: { type: string }
+ *     responses:
+ *       200:
+ *         description: Authenticated, returns access + refresh tokens
+ */
+authRouter.post("/social/apple", authRateLimit, appleNativeLogin);

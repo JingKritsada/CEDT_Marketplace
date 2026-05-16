@@ -29,6 +29,15 @@ final class SessionViewModel: ObservableObject {
         isAuthenticated = true
     }
 
+    /// Used by social-login flows that only return tokens via the OAuth callback.
+    /// Stores tokens, marks the session authenticated, then loads the profile.
+    func handleSocialAuthSuccess(_ tokens: SocialAuthTokens) async {
+        KeychainManager.shared.accessToken = tokens.accessToken
+        KeychainManager.shared.refreshToken = tokens.refreshToken
+        isAuthenticated = true
+        await fetchProfile()
+    }
+
     func logout() {
         KeychainManager.shared.clearAll()
         currentUser = nil

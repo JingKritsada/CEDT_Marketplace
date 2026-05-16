@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Combine
 import SwiftUI
 
@@ -91,6 +92,40 @@ struct LoginView: View {
                     action: { Task { await viewModel.login(session: session) } },
                     isLoading: viewModel.isLoading
                 )
+
+                // Divider
+                HStack(spacing: 12) {
+                    Rectangle().fill(Color(.systemGray4)).frame(height: 1)
+                    Text("or").font(.caption).foregroundColor(.secondary)
+                    Rectangle().fill(Color(.systemGray4)).frame(height: 1)
+                }
+
+                // Social sign-in
+                VStack(spacing: 10) {
+                    // Sign in with Apple — requires a paid Apple Developer account
+                    // for the "Sign in with Apple" entitlement. Re-enable once enrolled.
+                    // SignInWithAppleButton(.signIn) { request in
+                    //     request.requestedScopes = [.fullName, .email]
+                    // } onCompletion: { result in
+                    //     Task { await viewModel.handleAppleSignIn(result: result, session: session) }
+                    // }
+                    // .signInWithAppleButtonStyle(.black)
+                    // .frame(height: 48)
+                    // .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                    SocialSignInButton(provider: .google) {
+                        Task {
+                            await viewModel.signInWithSocial(provider: .google, session: session)
+                        }
+                    }
+
+                    SocialSignInButton(provider: .facebook) {
+                        Task {
+                            await viewModel.signInWithSocial(provider: .facebook, session: session)
+                        }
+                    }
+                }
+                .disabled(viewModel.isLoading)
 
                 // Register
                 HStack(spacing: 4) {

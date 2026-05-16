@@ -26,3 +26,13 @@ struct RegisterRequest: Codable {
     let displayName: String
     let password: String
 }
+
+struct AppleFullName: Codable {
+    let givenName: String?
+    let familyName: String?
+}
+
+struct AppleLoginRequest: Codable {
+    let identityToken: String
+    let fullName: AppleFullName?
+}
